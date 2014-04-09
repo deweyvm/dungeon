@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Dungeon.Data.Array2d where
+module Labyrinth.Data.Array2d where
 
 
 import Data.Maybe

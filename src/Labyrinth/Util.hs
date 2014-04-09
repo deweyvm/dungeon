@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Dungeon.Util where
+module Labyrinth.Util where
 
 import Debug.Trace
 import Data.Function
