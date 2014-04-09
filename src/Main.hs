@@ -9,16 +9,21 @@ import qualified Data.Vector as Vec
 import Dungeon.Util
 import Dungeon.Data.Array2d
 
+black :: PixelRGBA8
+black = PixelRGBA8 0 0 0 255
+
+darkGreen :: PixelRGBA8
+darkGreen = PixelRGBA8 0 128 0 255
+
 saveMap :: FilePath -> Array2d PixelRGBA8 -> IO ()
 saveMap path arr@(Array2d cols rows _) =
-    writePng path img
-    where img = generateImage (getOrElse arr (PixelRGBA8 0 0 0 255) ) cols rows
+    writePng path $ generateImage (getOrElse arr black) cols rows
 
 
 
 pixToColor :: Int -> Int -> Int -> Int -> PixelRGBA8
 pixToColor cols rows x y =
-    let toInt :: Int -> Word8 = fromIntegral in
+    let toInt :: Int -> Word8 = fromIntegral in --avoid warning
     let color = (toInt. truncate) $ 128 * ((x `divf` cols) + (y `divf` rows)) in
         PixelRGBA8 color color color 255
 
@@ -28,7 +33,7 @@ makeRandom cols rows =
                    Array2d cols rows (Vec.fromList rand)
 
 bool2Pixel :: Bool -> PixelRGBA8
-bool2Pixel = select (PixelRGBA8 0 0 0 255) (PixelRGBA8 0 128 0 255)
+bool2Pixel = select black darkGreen
 
 getOccupants :: Array2d a -> Int -> Int -> [a]
 getOccupants arr i j =
