@@ -6,8 +6,8 @@ import System.Random
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Vector as Vec
-import Dungeon.Util
-import Dungeon.Data.Array2d
+import Labyrinth.Util
+import Labyrinth.Data.Array2d
 
 black :: PixelRGBA8
 black = PixelRGBA8 0 0 0 255
