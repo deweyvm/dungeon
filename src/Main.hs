@@ -1,11 +1,14 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
 
-import Prelude hiding (concat, foldl)
+import Prelude hiding (concat, foldl, all)
 import Codec.Picture
 import System.Random
 import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Vector as Vec
+import Data.Sequence hiding (take, zip, filter)
+import Control.Applicative
+import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 
@@ -31,7 +34,7 @@ bool2Pixel = select black darkGreen
 getOccupants :: Array2d a -> Int -> Int -> [a]
 getOccupants arr i j =
     cat [ (i + x, j + y) | x <- [-1..1], y <- [-1..1] ]
-    where cat = catMaybes . map (uncurry (get arr))
+    where cat = catMaybes . map (geti arr)
 
 
 countOccupants :: (a -> Bool) -> Array2d a -> Int -> Int -> Int
@@ -44,13 +47,39 @@ neighbors :: [(Int,Int)]
 neighbors = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
 
 getNeighbors :: (Int, Int) -> [(Int,Int)]
-getNeighbors (i, j) = [ (i + x, i + y) | (x, y) <- neighbors ]
---
---floodFill :: (Int, Int) -> (a -> Bool) -> Array2d a -> [(Int,Int)]
---floodFill initial f arr =
---    let
+getNeighbors (i, j) = map ((i +) *** (j +)) neighbors
 
---floodHelper :: Set (Int,Int)
+-- (\(x, y) -> (i + x, j + y)) === (i +) *** (j +)
+
+--
+
+data Flood = Flood (Set.Set (Int, Int)) (Seq (Int, Int))
+
+
+
+filterPoints :: forall a . Array2d a -> (((Int,Int),a) -> Bool) -> [(Int,Int)] -> [(Int,Int)]
+filterPoints arr f pts =
+    let x = zip pts $ (geti arr) <$> pts in
+    let y = catMaybes $ fmap pairMaybe x in
+    fst <$> (filter f y)
+  where pairMaybe :: forall c b . (c, Maybe b) -> Maybe (c, b)
+        pairMaybe (x, Just y) = Just (x, y)
+        pairMaybe (_, Nothing) = Nothing
+
+floodHelper :: (a -> Bool) -> Array2d a -> Flood -> Set.Set (Int,Int)
+floodHelper _ _ (Flood pts (viewl -> EmptyL)) = pts
+floodHelper f arr (Flood pts (viewl -> pt :< work)) =
+    let ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors pt) in
+    let newQueue = (fromList ns) >< work in
+    let newPoints = (pts `Set.union` Set.fromList ns) in
+    floodHelper f arr (Flood newPoints newQueue)
+
+floodFill :: (Int, Int) -> (a -> Bool) -> Array2d a -> [(Int,Int)]
+floodFill pt f arr =
+    Set.toList $ floodHelper f arr (Flood (Set.singleton pt) (singleton pt))
+
+
+
 -- \n f x -> execState (replicateM n (modify f)) x
 -- use the ((->)e) monad to compose the lists of functions
 

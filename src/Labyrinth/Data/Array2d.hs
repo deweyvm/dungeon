@@ -1,10 +1,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Labyrinth.Data.Array2d where
 
-
+import Prelude hiding (all)
+import Data.Foldable(all)
+import Control.Monad
 import Data.Maybe
 import qualified Data.Vector as Vec
-
+import Labyrinth.Util
 data Array2d elt = Array2d Int Int (Vec.Vector elt)
 
 instance Functor Array2d where
@@ -22,6 +24,18 @@ get arr@(Array2d cols rows _) i j =
     select (Just $ unsafeGet arr $ fromCoords arr i j)
            Nothing
            (i < 0 || i > cols - 1 || j < 0 || j > rows - 1)
+
+geti :: Array2d a -> (Int, Int) -> Maybe a
+geti a = uncurry $ get a
+
+getf :: (a -> Bool) -> Array2d a -> Int -> Int -> Maybe a
+getf f = mfilter f .:: get
+
+getif :: (a -> Bool) -> Array2d a -> (Int, Int) -> Maybe a
+getif f  = mfilter f .: geti
+
+getis :: (a -> Bool) -> Array2d a -> (Int, Int) -> Bool
+getis f arr pt = all f $ geti arr pt
 
 getOrElse :: Array2d a -> a -> Int -> Int -> a
 getOrElse arr e x y = fromMaybe e (get arr x y)
