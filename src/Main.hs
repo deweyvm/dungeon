@@ -3,8 +3,8 @@
 import Prelude hiding (concat, foldl)
 import Codec.Picture
 import System.Random
-import Data.Word
 import Data.Maybe
+import qualified Data.Set as Set
 import qualified Data.Vector as Vec
 import Dungeon.Util
 import Dungeon.Data.Array2d
@@ -19,14 +19,6 @@ saveMap :: FilePath -> Array2d PixelRGBA8 -> IO ()
 saveMap path arr@(Array2d cols rows _) =
     writePng path $ generateImage (getOrElse arr black) cols rows
 
-
-
-pixToColor :: Int -> Int -> Int -> Int -> PixelRGBA8
-pixToColor cols rows x y =
-    let toInt :: Int -> Word8 = fromIntegral in --avoid warning
-    let color = (toInt. truncate) $ 128 * ((x `divf` cols) + (y `divf` rows)) in
-        PixelRGBA8 color color color 255
-
 makeRandom :: Int -> Int -> Array2d Bool
 makeRandom cols rows =
     let rand = take (cols*rows) $ randoms (mkStdGen 0) in
@@ -35,32 +27,39 @@ makeRandom cols rows =
 bool2Pixel :: Bool -> PixelRGBA8
 bool2Pixel = select black darkGreen
 
+
 getOccupants :: Array2d a -> Int -> Int -> [a]
 getOccupants arr i j =
-    catMaybes $ map (uncurry (get arr)) [ (i, j)
-                                        , (i, (j - 1))
-                                        , (i, (j + 1))
-                                        , ((i - 1), j)
-                                        , ((i + 1), j)
-                                        , ((i - 1), (j - 1))
-                                        , ((i + 1), (j + 1))
-                                        , ((i - 1), (j + 1))
-                                        , ((i + 1), (j - 1))
-                                        ]
+    cat [ (i + x, j + y) | x <- [-1..1], y <- [-1..1] ]
+    where cat = catMaybes . map (uncurry (get arr))
 
 
 countOccupants :: (a -> Bool) -> Array2d a -> Int -> Int -> Int
 countOccupants f = (count f) .:: (getOccupants)
 
-runMachine :: Array2d Bool -> Array2d Bool
-runMachine arr = imap (\i j _ -> (countOccupants id arr i j) >= 5) arr
+occuCount :: Int -> Array2d Bool -> Array2d Bool
+occuCount k arr = imap (\i j _ -> (countOccupants id arr i j) >= k) arr
+
+neighbors :: [(Int,Int)]
+neighbors = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
+
+getNeighbors :: (Int, Int) -> [(Int,Int)]
+getNeighbors (i, j) = [ (i + x, i + y) | (x, y) <- neighbors ]
+--
+--floodFill :: (Int, Int) -> (a -> Bool) -> Array2d a -> [(Int,Int)]
+--floodFill initial f arr =
+--    let
+
+--floodHelper :: Set (Int,Int)
+-- \n f x -> execState (replicateM n (modify f)) x
+-- use the ((->)e) monad to compose the lists of functions
 
 main :: IO ()
 main = do
     let cols = 200
     let rows = 200
-    let initial = makeRandom cols rows
-    let permuted = iterate runMachine initial !! 4
-    let img2 = fmap bool2Pixel permuted
+    let initial :: Array2d Bool = makeRandom cols rows
+    let permuted = foldr (.) id [occuCount 5, occuCount 5] initial
+    let img = fmap bool2Pixel permuted
 
-    saveMap "test.png" img2
+    saveMap "test.png" img
