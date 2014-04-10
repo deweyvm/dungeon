@@ -8,9 +8,11 @@ import qualified Data.Set as Set
 import qualified Data.Vector as Vec
 import Data.Sequence hiding (take, zip, filter)
 import Control.Applicative
+import Control.Monad
 import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
+
 
 black :: PixelRGBA8
 black = PixelRGBA8 0 0 0 255
@@ -41,32 +43,35 @@ countOccupants :: (a -> Bool) -> Array2d a -> Int -> Int -> Int
 countOccupants f = (count f) .:: (getOccupants)
 
 occuCount :: Int -> Array2d Bool -> Array2d Bool
-occuCount k arr = imap (\i j _ -> (countOccupants id arr i j) >= k) arr
+occuCount k arr = (\i j _ -> (countOccupants id arr i j) >= k) <$*> arr
 
-neighbors :: [(Int,Int)]
+vertStrip :: Bool -> Int -> Array2d Bool -> Array2d Bool
+vertStrip b mods = (<$*>) (\i j p -> select p b (i `mod` mods == 0 || j `mod` mods == 0))
+
+neighbors :: [Point]
 neighbors = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
 
-getNeighbors :: (Int, Int) -> [(Int,Int)]
+getNeighbors :: Point -> [Point]
 getNeighbors (i, j) = map ((i +) *** (j +)) neighbors
-
 -- (\(x, y) -> (i + x, j + y)) === (i +) *** (j +)
 
 --
 
-data Flood = Flood (Set.Set (Int, Int)) (Seq (Int, Int))
+data Flood = Flood (Set.Set Point) (Seq Point)
 
+newFlood :: Point -> Flood
+newFlood = liftM2 Flood Set.singleton singleton
 
-
-filterPoints :: forall a . Array2d a -> (((Int,Int),a) -> Bool) -> [(Int,Int)] -> [(Int,Int)]
+filterPoints :: forall a . Array2d a -> ((Point,a) -> Bool) -> [Point] -> [Point]
 filterPoints arr f pts =
     let x = zip pts $ (geti arr) <$> pts in
-    let y = catMaybes $ fmap pairMaybe x in
+    let y = catMaybes $ pairMaybe <$> x in
     fst <$> (filter f y)
   where pairMaybe :: forall c b . (c, Maybe b) -> Maybe (c, b)
         pairMaybe (x, Just y) = Just (x, y)
         pairMaybe (_, Nothing) = Nothing
 
-floodHelper :: (a -> Bool) -> Array2d a -> Flood -> Set.Set (Int,Int)
+floodHelper :: (a -> Bool) -> Array2d a -> Flood -> Set.Set Point
 floodHelper _ _ (Flood pts (viewl -> EmptyL)) = pts
 floodHelper f arr (Flood pts (viewl -> pt :< work)) =
     let ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors pt) in
@@ -74,21 +79,29 @@ floodHelper f arr (Flood pts (viewl -> pt :< work)) =
     let newPoints = (pts `Set.union` Set.fromList ns) in
     floodHelper f arr (Flood newPoints newQueue)
 
-floodFill :: (Int, Int) -> (a -> Bool) -> Array2d a -> [(Int,Int)]
+floodFill :: Point -> (a -> Bool) -> Array2d a -> Set.Set Point
 floodFill pt f arr =
-    Set.toList $ floodHelper f arr (Flood (Set.singleton pt) (singleton pt))
-
-
+    floodHelper f arr $ newFlood pt
 
 -- \n f x -> execState (replicateM n (modify f)) x
 -- use the ((->)e) monad to compose the lists of functions
+
+coordList2BoolArray2d :: Int -> Int -> Set.Set Point -> Array2d Bool
+coordList2BoolArray2d cols rows indices =
+    tabulate cols rows False (\i j -> Set.member (i, j) indices)
+
+
 
 main :: IO ()
 main = do
     let cols = 200
     let rows = 200
     let initial :: Array2d Bool = makeRandom cols rows
-    let permuted = foldr (.) id [occuCount 5, occuCount 5] initial
-    let img = fmap bool2Pixel permuted
+    let permuted = foldr (.) id [occuCount 5, vertStrip True 15, vertStrip False 16, occuCount 5] initial
+    let flooded = case find id permuted of
+                    Nothing -> permuted
+                    Just (x, y, _) -> coordList2BoolArray2d cols rows $ floodFill (x, y) id permuted
+
+    let img = bool2Pixel <$> flooded
 
     saveMap "test.png" img
