@@ -58,22 +58,23 @@ getOrElse :: Array2d a -> a -> Int -> Int -> a
 getOrElse arr e x y = fromMaybe e (get arr x y)
 
 
-(<$*>) :: (Int -> Int -> a -> b) -> Array2d a -> Array2d b
+(<$*>) :: (Point -> a -> b) -> Array2d a -> Array2d b
 f <$*> arr@(Array2d cols rows v) = Array2d cols rows $ mapped
     where zipped = Vec.zip (Vec.fromList [0..(cols*rows)-1]) v
-          mapped = (\(k, p) -> let (x, y) = toCoords arr k in f x y p) <$> zipped
+          mapped = (\(k, p) -> let (x, y) = toCoords arr k in f (x, y) p) <$> zipped
 
-zipWithIndex :: Array2d a -> Array2d (Int, Int, a)
-zipWithIndex arr = (,,) <$*> arr
+zipWithIndex :: Array2d a -> Array2d (Point, a)
+zipWithIndex arr = (,) <$*> arr
 
-find :: (a -> Bool) -> Array2d a -> Maybe (Int, Int, a)
+
+find :: (a -> Bool) -> Array2d a -> Maybe (Point, a)
 find f arr =
     let (Array2d _ _ zipped) = zipWithIndex arr in
-    Vec.find (\(_, _, e) -> f e) zipped
+    Vec.find (\(_, e) -> f e) zipped
 
-tabulate :: Int -> Int -> a -> (Int -> Int -> a) -> Array2d a
+tabulate :: Int -> Int -> a -> (Point -> a) -> Array2d a
 tabulate cols rows initial f =
-   ( \x y _ -> f x y) <$*>  base
+    (\p _ -> f p) <$*>  base
     where base = Array2d cols rows $ Vec.replicate (cols*rows) initial
 
 
