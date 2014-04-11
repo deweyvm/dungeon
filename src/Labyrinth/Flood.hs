@@ -1,13 +1,15 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
-module Labyrinth.Flood(floodFill) where
+module Labyrinth.Flood(floodFill, floodAll) where
 
+import Prelude hiding (foldl)
 import qualified Data.Set as Set
 import Data.Sequence hiding (take, zip, filter)
 import Data.Maybe
-import Labyrinth.Data.Array2d
 import Control.Applicative
 import Control.Monad
 import Control.Arrow((***))
+import Labyrinth.Data.Array2d
+import Labyrinth.Util
 
 data Flood = Flood (Set.Set Point) (Seq Point)
 
@@ -42,3 +44,21 @@ floodHelper f arr (Flood pts (viewl -> pt :< work)) =
 floodFill :: Point -> (a -> Bool) -> Array2d a -> Set.Set Point
 floodFill pt f arr =
     floodHelper f arr $ newFlood pt
+
+getSolid :: (a -> Bool) -> Array2d a -> [Point]
+getSolid f arr = foldli (\xs (pt, x) -> if f x then (pt:xs) else xs) [] arr
+
+floodAll :: (a -> Bool) -> Array2d a -> [Set.Set Point]
+floodAll f arr = floodAllHelper f arr (Set.fromList (getSolid f arr)) []
+
+floodAllHelper :: (a -> Bool)
+               -> Array2d a
+               -> Set.Set Point   --solid points remaining
+               -> [Set.Set Point] --current collection of regions
+               -> [Set.Set Point]
+floodAllHelper f arr pts sofar =
+    case Set.minView pts of
+        Just (x, _) -> let filled = floodFill x f arr in
+                          let pointsLeft = Set.difference pts filled in
+                          floodAllHelper f arr pointsLeft (filled:sofar)
+        Nothing -> sofar

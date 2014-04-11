@@ -16,6 +16,9 @@ data Array2d elt = Array2d Int Int (Vec.Vector elt)
 instance Functor Array2d where
     fmap f (Array2d cols rows v) = Array2d cols rows $ f <$> v
 
+--private
+toVec :: Array2d a -> Vec.Vector a
+toVec (Array2d _ _ v) = v
 
 toCoords :: Array2d a -> Int -> Point
 toCoords (Array2d cols _ _) k = (k `mod` cols, k `quot` cols)
@@ -26,8 +29,6 @@ fromCoords (Array2d cols _ _) (i, j) = i + j * cols
 (//) :: forall a. Vec.Vector a -> [(Int, a)] -> Vec.Vector a
 (//) = (Vec.//)
 
-select :: a -> a -> Bool -> a
-select f t p = if p then t else f
 
 unsafeGet :: Array2d a -> Int -> a
 unsafeGet (Array2d _ _ v) k = v Vec.! k
@@ -66,9 +67,11 @@ f <$*> arr@(Array2d cols rows v) = Array2d cols rows $ mapped
 zipWithIndex :: Array2d a -> Array2d (Point, a)
 zipWithIndex arr = (,) <$*> arr
 
+foldli :: (a -> (Point, b) -> a) -> a -> Array2d b -> a
+foldli f x arr = Vec.foldl f x $ (toVec . zipWithIndex) arr
 
-find :: (a -> Bool) -> Array2d a -> Maybe (Point, a)
-find f arr =
+finda :: (a -> Bool) -> Array2d a -> Maybe (Point, a)
+finda f arr =
     let (Array2d _ _ zipped) = zipWithIndex arr in
     Vec.find (\(_, e) -> f e) zipped
 

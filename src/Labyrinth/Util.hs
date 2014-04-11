@@ -18,3 +18,6 @@ divf = (/) `on` fromIntegral
 
 count ::  (a -> Bool) -> [a] -> Int
 count f = length . (filter f)
+
+select :: a -> a -> Bool -> a
+select f t p = if p then t else f
