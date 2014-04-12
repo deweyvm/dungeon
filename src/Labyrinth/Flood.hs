@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns, BangPatterns #-}
 module Labyrinth.Flood(floodFill, floodAll) where
 
 import Prelude hiding (foldl)
@@ -9,7 +9,6 @@ import Control.Applicative
 import Control.Monad
 import Control.Arrow((***))
 import Labyrinth.Data.Array2d
-import Labyrinth.Util
 
 data Flood = Flood (Set.Set Point) (Seq Point)
 
@@ -18,7 +17,7 @@ newFlood = liftM2 Flood Set.singleton singleton
 
 
 neighbors :: [Point]
-neighbors = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
+neighbors = [(-1,0), (0, 1), (0, -1), (1, 0)]--[ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
 
 getNeighbors :: Point -> [Point]
 getNeighbors (i, j) = map ((i +) *** (j +)) neighbors
@@ -36,10 +35,10 @@ filterPoints arr f pts =
 floodHelper :: (a -> Bool) -> Array2d a -> Flood -> Set.Set Point
 floodHelper _ _ (Flood pts (viewl -> EmptyL)) = pts
 floodHelper f arr (Flood pts (viewl -> pt :< work)) =
-    let ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors pt) in
-    let newQueue = (fromList ns) >< work in
-    let newPoints = (pts `Set.union` Set.fromList ns) in
     floodHelper f arr (Flood newPoints newQueue)
+    where newPoints = (pts `Set.union` Set.fromList ns)
+          newQueue = (fromList ns) >< work
+          ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors pt)
 
 floodFill :: Point -> (a -> Bool) -> Array2d a -> Set.Set Point
 floodFill pt f arr =
@@ -59,6 +58,6 @@ floodAllHelper :: (a -> Bool)
 floodAllHelper f arr pts sofar =
     case Set.minView pts of
         Just (x, _) -> let filled = floodFill x f arr in
-                          let pointsLeft = Set.difference pts filled in
-                          floodAllHelper f arr pointsLeft (filled:sofar)
+                       let pointsLeft = Set.difference pts filled in
+                       floodAllHelper f arr pointsLeft (filled:sofar)
         Nothing -> sofar

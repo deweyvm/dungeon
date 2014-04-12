@@ -16,3 +16,4 @@ executable labyrinth
   main-is:             Main.hs
   hs-source-dirs:      src
   build-depends:       base ==4.6.*, JuicyPixels, vector, random, containers, queue
+  GHC-Options:         -O2

@@ -16,6 +16,9 @@ data Array2d elt = Array2d Int Int (Vec.Vector elt)
 instance Functor Array2d where
     fmap f (Array2d cols rows v) = Array2d cols rows $ f <$> v
 
+len :: Array2d a -> Int
+len (Array2d _ _ v) = Vec.length v
+
 --private
 toVec :: Array2d a -> Vec.Vector a
 toVec (Array2d _ _ v) = v
