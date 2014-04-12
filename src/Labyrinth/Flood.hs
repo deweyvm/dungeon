@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns, BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
 module Labyrinth.Flood(floodFill, floodAll) where
 
 import Prelude hiding (foldl)
@@ -17,7 +17,7 @@ newFlood = liftM2 Flood Set.singleton singleton
 
 
 neighbors :: [Point]
-neighbors = [(-1,0), (0, 1), (0, -1), (1, 0)]--[ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
+neighbors = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
 
 getNeighbors :: Point -> [Point]
 getNeighbors (i, j) = map ((i +) *** (j +)) neighbors
