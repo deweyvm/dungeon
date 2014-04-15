@@ -12,6 +12,7 @@ import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.Flood
 import Labyrinth.Path
+
 type Color = PixelRGBA8
 
 black :: Color
@@ -69,8 +70,8 @@ toPixelArray cols rows pts =
 main :: IO ()
 main = do
     seed :: Int <- randomIO
-    let cols = 512
-    let rows = 512
+    let cols = 200
+    let rows = 200
     let initial :: Array2d Bool = makeRandom seed cols rows
     let permuted = foldr (.) id [ not'
                                 , occuCount 7
@@ -81,4 +82,9 @@ main = do
     let flooded = zip (randColors seed) $ floodAll id permuted
     let arr = toPixelArray cols rows flooded
 
+    let patharr = (tabulate 10 10 False (\(x, y) -> not (x == 0 || y == 0 || x == 9 || y == 9)))
+    let start = (1, 1) :: Point
+    let end = (2, 2) :: Point
+    let path = pfind patharr start end
+    print path
     saveMap "test.png" $ arr
