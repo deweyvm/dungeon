@@ -1,5 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
-module Labyrinth.Flood(floodFill, floodAll) where
+module Labyrinth.Flood(floodFill, floodAll, getNeighbors) where
 
 import Prelude hiding (foldl)
 import qualified Data.Set as Set
@@ -32,17 +32,17 @@ filterPoints arr f pts =
         pairMaybe (x, Just y) = Just (x, y)
         pairMaybe (_, Nothing) = Nothing
 
-floodHelper :: (a -> Bool) -> Array2d a -> Flood -> Set.Set Point
-floodHelper _ _ (Flood pts (viewl -> EmptyL)) = pts
-floodHelper f arr (Flood pts (viewl -> pt :< work)) =
-    floodHelper f arr (Flood newPoints newQueue)
+floodHelper :: (a -> Bool) -> Array2d a -> Int -> Flood -> Set.Set Point
+floodHelper _ _ _ (Flood pts (viewl -> EmptyL)) = pts
+floodHelper f arr depth (Flood pts (viewl -> pt :< work)) =
+    floodHelper f arr (depth + 1) (Flood newPoints newQueue)
     where newPoints = (pts `Set.union` Set.fromList ns)
           newQueue = (fromList ns) >< work
           ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors pt)
 
 floodFill :: Point -> (a -> Bool) -> Array2d a -> Set.Set Point
 floodFill pt f arr =
-    floodHelper f arr $ newFlood pt
+    floodHelper f arr 0 $ newFlood pt
 
 getSolid :: (a -> Bool) -> Array2d a -> [Point]
 getSolid f arr = foldli (\xs (pt, x) -> if f x then (pt:xs) else xs) [] arr

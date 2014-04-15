@@ -11,7 +11,7 @@ import Control.Applicative
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.Flood
-
+import Labyrinth.Path
 type Color = PixelRGBA8
 
 black :: Color

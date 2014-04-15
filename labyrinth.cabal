@@ -15,5 +15,5 @@ cabal-version:       >=1.8
 executable labyrinth
   main-is:             Main.hs
   hs-source-dirs:      src
-  build-depends:       base ==4.6.*, JuicyPixels, vector, random, containers, queue
+  build-depends:       base ==4.6.*, JuicyPixels, vector, random, containers, queue, PSQueue
   GHC-Options:         -O2

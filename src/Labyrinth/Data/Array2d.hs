@@ -29,15 +29,11 @@ toCoords (Array2d cols _ _) k = (k `mod` cols, k `quot` cols)
 fromCoords :: Array2d a -> Point -> Int
 fromCoords (Array2d cols _ _) (i, j) = i + j * cols
 
-(//) :: forall a. Vec.Vector a -> [(Int, a)] -> Vec.Vector a
-(//) = (Vec.//)
-
-
 unsafeGet :: Array2d a -> Int -> a
 unsafeGet (Array2d _ _ v) k = v Vec.! k
 
 update :: Array2d a -> Int -> Int -> a -> Array2d a
-update arr@(Array2d cols rows v) i j x = Array2d cols rows (v // [(coord, x)])
+update arr@(Array2d cols rows v) i j x = Array2d cols rows (v Vec.// [(coord, x)])
     where coord = fromCoords arr (i, j)
 
 get :: Array2d a -> Int -> Int -> Maybe a
