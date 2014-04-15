@@ -82,9 +82,9 @@ main = do
     let flooded = zip (randColors seed) $ floodAll id permuted
     let arr = toPixelArray cols rows flooded
 
-    let patharr = (tabulate 10 10 False (\(x, y) -> not (x == 0 || y == 0 || x == 9 || y == 9)))
-    let start = (1, 1) :: Point
-    let end = (2, 2) :: Point
+    let patharr = (tabulate 10 10 False (\(x, y) -> (x == 0 || y == 0 || x == 9 || y == 9)))
+    let start = (0, 0) :: Point
+    let end = (9, 9) :: Point
     let path = pfind patharr start end
     print path
     saveMap "test.png" $ arr
