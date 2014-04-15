@@ -4,12 +4,12 @@ module Labyrinth.Path(pfind) where
 import Prelude hiding(elem)
 import Control.Applicative
 import Data.Maybe
-import Data.Foldable(elem)
 import qualified Data.Map as Map
 import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
 import Labyrinth.Data.Array2d(Array2d,Point,geti)
 import qualified Labyrinth.Flood as F
+import Labyrinth.Util
 
 class PathGraph a b | a -> b where
     getNeighbors :: a -> b -> [(b, Float)]
@@ -36,22 +36,16 @@ pfind graph start end = pathHelper graph $ path
           path = Path Set.empty
                       (Q.singleton start 0)
                       Map.empty
-                      (Q.singleton start $ guessLength start end)
+                      (Map.singleton start $ guessLength start end)
                       Map.empty
                       end
 
 data Path b = Path (Set.Set b)       --ClosedSet
                    (Q.PSQ b Float)   --OpenSet
                    (Map.Map b Float) --g scoroe
-                   (Q.PSQ b Float)   --f score
+                   (Map.Map b Float)   --f score
                    (Map.Map b b)     --PathSoFar
                    b                 --goal
-
-getOrElse :: t -> (t -> Maybe a) -> a -> a
-getOrElse x f p =
-    case f x of
-        Just y -> y
-        Nothing -> p
 
 rewindPath :: Ord b => Map.Map b b -> b -> [b] -> [b]
 rewindPath path end sofar =
@@ -62,34 +56,43 @@ rewindPath path end sofar =
 unsafeGet :: Ord k => k -> Map.Map k a -> a
 unsafeGet x = fromJust . (Map.lookup x)
 
+queueContains :: (Ord p, Ord k) => k -> Q.PSQ k p -> Bool
+queueContains = isJust .: Q.lookup
+
 pathHelper :: forall a b.(Ord b, Metric b, PathGraph a b) => a -> Path b -> Maybe [b]
 pathHelper coll (Path closedSet openSet gs fs path goal) =
     let current = Q.findMin openSet in
-
+    let newOpen = Q.deleteMin openSet in
+    let processCurrent :: Q.Binding b Float -> Maybe [b]
+        processCurrent b =
+            let currentNode = Q.key b in
+            if currentNode == goal
+            then Just $ rewindPath path goal []
+            else let newClosed = Set.insert currentNode closedSet in
+                 let (gs', fs', path', open') = foldl (updatePath goal currentNode newClosed) (gs, fs, path, newOpen) (fst <$> (getNeighbors coll currentNode)) in
+                     pathHelper coll (Path newClosed open' gs' fs' path' goal) in
     if (Q.null openSet) || (isNothing current)
     then Nothing
-    else let newOpen = Q.deleteMin openSet in
-        (fromJust . processCurrent) <$> current
-     where processCurrent :: Q.Binding b Float -> Maybe [b]
-           processCurrent b =
-               let currentNode = Q.key b in
-               if currentNode == goal
-               then Just $ rewindPath path goal []
-               else let newClosed = Set.insert currentNode closedSet in
-                    let (gs', fs', path', open') = foldl (inner currentNode newClosed) (gs, fs, path, openSet) (fst <$> (getNeighbors coll currentNode)) in
-                       pathHelper coll (Path newClosed open' gs' fs' path' goal)
-           inner current closed s@(gs, fs, path, open) n =
-               if Set.member n closed
-               then s
-               else let tg = unsafeGet current gs in
-                    if (not . isJust . (Q.lookup n)) open || tg < unsafeGet n gs
-                    then let newPath = Map.insert n current path in
-                         let newGs = Map.insert n tg gs in
-                         let newFs = Q.insert n (tg + guessLength n goal) fs in
-                         let newOpen = if (isJust . (Q.lookup n)) open then open else Q.insert n 1.0 open in
-                         (newGs, newFs, newPath, newOpen)
-                    else s
+    else (fromJust . processCurrent) <$> current
 
 
 
+updatePath :: (Ord b, Metric b)
+           => b
+           -> b
+           -> Set.Set b
+           -> (Map.Map b Float, Map.Map b Float, Map.Map b b, Q.PSQ b Float)
+           -> b
+           -> (Map.Map b Float, Map.Map b Float, Map.Map b b, Q.PSQ b Float)
+updatePath goal current closed s@(g, f, p, o) n =
+    if Set.member n closed
+    then s
+    else let tg = unsafeGet current g in
+         if not $ queueContains n o || tg < unsafeGet n g
+         then let newPath = Map.insert n current p in
+              let newGs = Map.insert n tg g in
+              let newFs = Map.insert n (tg + guessLength n goal) f in
+              let newOp = if queueContains n o then o else Q.insert n 1.0 o in
+              (newGs, newFs, newPath, newOp)
+         else s
 

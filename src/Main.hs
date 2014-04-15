@@ -46,11 +46,6 @@ clearBorder thick arr@(Array2d cols rows _) =
     (\(i, j) p -> i < thick || j < thick || i > cols - thick - 1 || j > rows - thick - 1 || p) <$*> arr
 
 -- \n f x -> execState (replicateM n (modify f)) x
--- use the ((->)e) monad to compose the lists of functions
-
-coordSet2BoolArray2d :: Int -> Int -> Set.Set Point -> Array2d Bool
-coordSet2BoolArray2d cols rows indices =
-    tabulate cols rows False (\pt -> Set.member pt indices)
 
 randColors :: Int -> [Color]
 randColors seed =
