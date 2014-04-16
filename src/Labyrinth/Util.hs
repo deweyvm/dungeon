@@ -16,6 +16,7 @@ import Debug.Trace
 import Data.Function
 import Control.Parallel.Strategies
 
+-- | Alias for a pair of integers
 type Point = (Int,Int)
 
 -- | Trace then return the same value

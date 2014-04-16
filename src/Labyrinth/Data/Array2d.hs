@@ -27,7 +27,10 @@ import Data.Maybe
 import qualified Data.Vector as Vec
 import Labyrinth.Util
 
-data Array2d elt = Array2d Int Int (Vec.Vector elt)
+type Col = Int
+type Row = Int
+-- | A two dimensional array.
+data Array2d elt = Array2d Col Row (Vec.Vector elt)
 
 instance Functor Array2d where
     fmap f (Array2d cols rows v) = Array2d cols rows $ f <$> v
@@ -59,10 +62,11 @@ get arr@(Array2d cols rows _) i j =
 geti :: Array2d a -> Point -> Maybe a
 geti a = uncurry $ get a
 
+-- | Get an element or return an alternative value.
 getOrElse :: Array2d a -> a -> Int -> Int -> a
 getOrElse arr e x y = fromMaybe e (get arr x y)
 
--- | fmap with index
+-- | Computes fmap with index
 (<$*>) :: (Point -> a -> b) -> Array2d a -> Array2d b
 f <$*> arr@(Array2d cols rows v) = Array2d cols rows $ mapped
     where zipped = Vec.zip (Vec.fromList [0..(cols*rows)-1]) v
@@ -83,7 +87,7 @@ find f arr =
     Vec.find (\(_, e) -> f e) zipped
 
 -- | Creates a new Array2d from a generating function
-tabulate :: Int -> Int -> a -> (Point -> a) -> Array2d a
+tabulate :: Col -> Row -> a -> (Point -> a) -> Array2d a
 tabulate cols rows initial f =
     (\p _ -> f p) <$*>  base
     where base = Array2d cols rows $ Vec.replicate (cols*rows) initial
