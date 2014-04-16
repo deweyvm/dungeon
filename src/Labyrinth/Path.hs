@@ -17,10 +17,9 @@ import Control.Applicative
 import Data.Maybe
 import qualified Data.Map as Map
 import Data.Foldable(minimumBy)
---import qualified Data.PSQueue as Q
+import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
-
---import Debug.Trace
+import Labyrinth.Util
 
 
 class PathGraph a b where
@@ -33,19 +32,17 @@ class Solid a where
     isSolid :: a -> Bool
 
 
-mkPath :: Metric b => b -> b -> Path b
+mkPath :: (Metric a, Ord a) => a -> a -> Path a
 mkPath initial goal = Path Set.empty
-                           (Set.singleton initial)
                            (Map.singleton initial 0)
-                           (Map.singleton initial $ guessLength initial goal)
+                           (Q.singleton initial $ guessLength initial goal)
                            Map.empty
                            goal
 
 
 data Path b = Path (Set.Set b)       -- ClosedSet
-                   (Set.Set b)       -- OpenSet
                    (Map.Map b Float) -- g scoroe
-                   (Map.Map b Float) -- f score
+                   (Q.PSQ b Float) -- f score, open set
                    (Map.Map b b)     -- PathSoFar
                    b                 -- goal node
 
@@ -67,41 +64,41 @@ getMin fs set =
 
 
 pathHelper :: forall a b.(Ord b, Metric b, PathGraph a b) => a -> Path b -> Either String [b]
-pathHelper coll (Path closedSet openSet gs fs path goal) =
-    case getMin fs openSet of
-        Just (current, newOpen) -> processCurrent current newOpen
+pathHelper coll (Path closedSet gs fsop path goal) =
+    case Q.minView fsop of
+        Just (current, newOpen) -> processCurrent (Q.key current) newOpen
         Nothing -> Left "Found no path"
-    where processCurrent :: b -> Set.Set b -> Either String [b]
+    where processCurrent :: b -> Q.PSQ b Float -> Either String [b]
           processCurrent currentNode open =
               let newClosed = Set.insert currentNode closedSet in
               if currentNode == goal
               then Right $ rewindPath path goal []
               else let ns = getNeighbors coll currentNode
-                       (gs', fs', path', open') = foldl (updatePath goal currentNode newClosed) (gs, fs, path, open) (fst <$> ns) in
-                       pathHelper coll (Path newClosed open' gs' fs' path' goal)
+                       (gs', fsop', path') = foldl (updatePath goal currentNode newClosed) (gs, open, path) (fst <$> ns) in
+                       pathHelper coll (Path newClosed gs' fsop' path' goal)
 
+qMember :: (Ord a, Ord b) => a -> Q.PSQ a b -> Bool
+qMember = isJust .: Q.lookup
 
 updatePath :: (Ord b, Metric b)
            => b
            -> b
            -> Set.Set b
-           -> (Map.Map b Float, Map.Map b Float, Map.Map b b, Set.Set b)
+           -> (Map.Map b Float, Q.PSQ b Float, Map.Map b b)
            -> b
-           -> (Map.Map b Float, Map.Map b Float, Map.Map b b, Set.Set b)
-updatePath goal current closed s@(g, f, p, o) n =
+           -> (Map.Map b Float, Q.PSQ b Float, Map.Map b b)
+updatePath goal current closed s@(g, fo, p) n =
     if Set.member n closed
     then s
     else case Map.lookup current g of
         Just tg ->
             let tg' = tg + guessLength n current in
-            if tg' < tg || Set.notMember n o
+            if tg' < tg || qMember n fo
             then let newPath = Map.insert n current p in
                  let newGs = Map.insert n tg' g in
-                 let newFs = Map.insert n (tg' + guessLength n goal) f in
-                 let newOp = Set.insert n o in
-                 (newGs, newFs, newPath, newOp)
+                 let newFsop = Q.insert n (tg' + guessLength n goal) fo in
+                 (newGs, newFsop, newPath)
             else s
-
         Nothing -> s
 
 -- | Find /a/ shortest path from the initial node to the goal node

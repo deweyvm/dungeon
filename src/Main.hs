@@ -86,7 +86,8 @@ addPath arr tup@(color, area) =
 
 main :: IO ()
 main = do
-    seed :: Int <- randomIO
+    --seed :: Int <- randomIO
+    let seed = 0
     let cols = 200
     let rows = 200
     let initial = makeRandom seed cols rows
