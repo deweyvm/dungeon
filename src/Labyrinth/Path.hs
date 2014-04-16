@@ -13,14 +13,12 @@ Implementation of the A* pathfinding algorithm.
 module Labyrinth.Path(pfind, PathGraph(..), Metric(..), Solid(..)) where
 
 import Prelude hiding(elem, all)
-import Control.Applicative
 import Data.Maybe
 import qualified Data.Map as Map
-import Data.Foldable(minimumBy)
 import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
 import Labyrinth.Util
-
+import Debug.Trace
 
 class PathGraph a b where
     getNeighbors :: a -> b -> [(b, Float)]
@@ -52,17 +50,6 @@ rewindPath path end sofar =
         Just next -> rewindPath path next (end:sofar)
         Nothing -> sofar
 
-
-getMin :: (Ord a, Ord b) => Map.Map a b -> Set.Set a -> Maybe (a, Set.Set a)
-getMin fs set =
-    let pairs = Set.map (\s -> ((,) s) <$> (Map.lookup s fs)) set in
-    let lst = (catMaybes . Set.toList) pairs in
-    if length lst == 0
-    then Nothing
-    else let elt = fst (minimumBy (\(_, y1) (_, y2) -> compare y1 y2) lst) in
-         Just (elt, Set.delete elt set)
-
-
 pathHelper :: forall a b.(Ord b, Metric b, PathGraph a b) => a -> Path b -> Either String [b]
 pathHelper coll (Path closedSet gs fsop path goal) =
     case Q.minView fsop of
@@ -74,7 +61,7 @@ pathHelper coll (Path closedSet gs fsop path goal) =
               if currentNode == goal
               then Right $ rewindPath path goal []
               else let ns = getNeighbors coll currentNode
-                       (gs', fsop', path') = foldl (updatePath goal currentNode newClosed) (gs, open, path) (fst <$> ns) in
+                       (gs', fsop', path') = foldl (updatePath goal currentNode newClosed) (gs, open, path) ns in
                        pathHelper coll (Path newClosed gs' fsop' path' goal)
 
 qMember :: (Ord a, Ord b) => a -> Q.PSQ a b -> Bool
@@ -85,18 +72,19 @@ updatePath :: (Ord b, Metric b)
            -> b
            -> Set.Set b
            -> (Map.Map b Float, Q.PSQ b Float, Map.Map b b)
-           -> b
+           -> (b, Float)
            -> (Map.Map b Float, Q.PSQ b Float, Map.Map b b)
-updatePath goal current closed s@(g, fo, p) n =
-    if Set.member n closed
+updatePath goal current closed s@(g, fo, p) (nnode, ncost) =
+    if Set.member nnode closed
     then s
     else case Map.lookup current g of
         Just tg ->
-            let tg' = tg + guessLength n current in
-            if tg' < tg || qMember n fo
-            then let newPath = Map.insert n current p in
-                 let newGs = Map.insert n tg' g in
-                 let newFsop = Q.insert n (tg' + guessLength n goal) fo in
+            let tg' = tg + ncost in
+
+            if tg' < tg || not (qMember nnode fo)
+            then let newPath = Map.insert nnode current p in
+                 let newGs = Map.insert nnode tg' g in
+                 let newFsop = Q.insert nnode (tg' + guessLength nnode goal) fo in
                  (newGs, newFsop, newPath)
             else s
         Nothing -> s

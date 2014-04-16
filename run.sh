@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+EXE=./dist/build/labyrinth/labyrinth.exe
 mytime() {
     timestr=`(time "$@")  2>&1`
     echo "Time: $timestr" | grep 'real' | sed 's/real\t0m//g'
@@ -14,9 +14,10 @@ if [[ $? -ne 0 ]] ; then
 fi
 popd &> /dev/null
 echo -n "Building... "
-(mytime cabal build -v 0) &&\
+rm -f $EXE &&\
+cabal build  &&\
 echo -n "Running labyrinth... " &&\
-(mytime ./dist/build/labyrinth/labyrinth.exe +RTS -N)
+$EXE +RTS -N
 if [[ $? -ne 0 ]] ; then
     echo "failed"
 fi

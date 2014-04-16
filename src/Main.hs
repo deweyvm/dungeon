@@ -29,9 +29,9 @@ instance Solid a => PathGraph (Array2d a) Point where
 
 instance Metric Point where
     guessLength (i, j) (x, y) = sqrt (xx + yy)
-        where xx = sq (x - i)
-              yy = sq (y - j)
-              sq = (** 2) . fromIntegral
+        where xx :: Float = sq (x - i)
+              yy :: Float = sq (y - j)
+              sq :: Int -> Float = (** 2) . fromIntegral
 
 
 type Color = (Word8, Word8, Word8)
@@ -81,7 +81,7 @@ addPath arr tup@(color, area) =
                 Right pts -> [(color, rest Set.\\ set), (white, set)]
                    where set = Set.fromList pts
                 Left _ -> trace "Failed to find path" [tup]
-        Nothing -> trace "Region too small" [tup]
+        Nothing -> [tup]
 
 
 main :: IO ()
@@ -100,5 +100,5 @@ main = do
     let flooded = zip (randColors seed) $ F.floodAll id permuted
     let pathed = List.concat $ (addPath permuted) <$=> flooded
     let arr = toPixelArray cols rows pathed
-    print "test"
+
     saveMap "test.png" $ arr
