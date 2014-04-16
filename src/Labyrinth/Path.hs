@@ -6,11 +6,11 @@ import Control.Applicative
 import Data.Maybe
 import qualified Data.Map as Map
 import Data.Foldable(minimumBy)
-import qualified Data.PSQueue as Q
+--import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
 import Labyrinth.Data.Array2d(Array2d,Point,geti,zipWithIndex)
 import qualified Labyrinth.Flood as F
-import Debug.Trace
+--import Debug.Trace
 
 
 class PathGraph a b where

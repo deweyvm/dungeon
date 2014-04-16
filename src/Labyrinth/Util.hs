@@ -3,6 +3,7 @@ module Labyrinth.Util where
 
 import Debug.Trace
 import Data.Function
+import Control.Parallel.Strategies
 
 myTrace :: Show a => a -> a
 myTrace x = traceShow x x
@@ -21,3 +22,7 @@ count f = length . (filter f)
 
 select :: a -> a -> Bool -> a
 select f t p = if p then t else f
+
+
+(<$=>) :: (NFData b) => (a -> b) -> [a] -> [b]
+f <$=> ls = (parMap rdeepseq) f ls
