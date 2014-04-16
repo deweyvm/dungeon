@@ -5,12 +5,11 @@ import Prelude hiding(elem, all)
 import Control.Applicative
 import Data.Maybe
 import qualified Data.Map as Map
-import Data.Foldable(all,minimumBy)
+import Data.Foldable(minimumBy)
 import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
 import Labyrinth.Data.Array2d(Array2d,Point,geti,zipWithIndex)
 import qualified Labyrinth.Flood as F
-import Labyrinth.Util
 import Debug.Trace
 
 
@@ -33,8 +32,8 @@ instance Solid a => PathGraph (Array2d a) Point where
 
 instance Metric Point where
     guessLength (i, j) (x, y) = sqrt (xx + yy)
-        where xx :: Float = sq (x - i)
-              yy :: Float = sq (y - j)
+        where xx = sq (x - i)
+              yy = sq (y - j)
               sq = (** 2) . fromIntegral
 --f x = g x + h x
 --g x = cost so far
@@ -62,15 +61,10 @@ rewindPath path end sofar =
         Just next -> rewindPath path next (end:sofar)
         Nothing -> sofar
 
-queueContains :: (Ord p, Ord k) => k -> Q.PSQ k p -> Bool
-queueContains = isJust .: Q.lookup
 
-thing :: b -> Maybe a -> Maybe (b, a)
-thing y (Just x) = Just(y, x)
-thing _ Nothing = Nothing
 getMin :: forall a b.(Ord a, Ord b) => Map.Map a b -> Set.Set a -> Maybe (a, Set.Set a)
 getMin fs set =
-    let r = Set.toList $ Set.map (\s -> (thing s) (Map.lookup s fs)) set
+    let r = Set.toList $ Set.map (\s -> ((,) s) <$> (Map.lookup s fs)) set
         lst :: [(a, b)]
         lst = catMaybes $ r in
     if length lst == 0
@@ -82,7 +76,7 @@ getMin fs set =
 pathHelper :: forall a b.(Ord b, Metric b, Show b, PathGraph a b) => a -> Path b -> Either String [b]
 pathHelper coll (Path closedSet openSet gs fs path goal) =
     case getMin fs openSet of
-        Just (current, newOpen) -> trace (show current) $ processCurrent current newOpen
+        Just (current, newOpen) -> processCurrent current newOpen
         Nothing -> Left "Found no path"
     where processCurrent :: b -> Set.Set b -> Either String [b]
           processCurrent currentNode open =
@@ -90,7 +84,7 @@ pathHelper coll (Path closedSet openSet gs fs path goal) =
               if currentNode == goal
               then Right $ rewindPath path goal []
               else let ns = getNeighbors coll currentNode
-                       (gs', fs', path', open') = foldl (updatePath goal currentNode newClosed) (gs, fs, path, open) (fst <$> (trace (show ns) ns)) in
+                       (gs', fs', path', open') = foldl (updatePath goal currentNode newClosed) (gs, fs, path, open) (fst <$> ns) in
                        pathHelper coll (Path newClosed open' gs' fs' path' goal)
 
 
@@ -102,7 +96,7 @@ updatePath :: (Ord b, Metric b)
            -> b
            -> (Map.Map b Float, Map.Map b Float, Map.Map b b, Set.Set b)
 updatePath goal current closed s@(g, f, p, o) n =
-    if Set.member n closed-- || (not $ Set.member n o)
+    if Set.member n closed
     then s
     else
         case Map.lookup current g of

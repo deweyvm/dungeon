@@ -18,6 +18,9 @@ type Color = PixelRGBA8
 black :: Color
 black = PixelRGBA8 0 0 0 255
 
+white :: Color
+white = PixelRGBA8 255 255 255 255
+
 makeRandom :: Int -> Int -> Int -> Array2d Bool
 makeRandom seed cols rows =
     Array2d cols rows (Vec.fromList rand)
@@ -66,6 +69,22 @@ toPixelArray cols rows pts =
     where found :: Point -> Maybe Color
           found pt = fst <$> List.find (\(_, set) -> Set.member pt set) pts
 
+minMaxView :: Set.Set a -> Maybe (a, a, Set.Set a)
+minMaxView set = do
+    (x, rest) <- Set.maxView set
+    (y, rest2) <- Set.minView rest
+    return (x, y, rest2)
+
+addPath :: Array2d Bool -> (Color, Set.Set Point) -> [(Color, Set.Set Point)]
+addPath arr tup@(color, area) =
+    case minMaxView area of
+        Just (x, y, rest) ->
+            let path = pfind arr x y in
+                case path of
+                    Right pts -> let set = Set.fromList pts in [(color, area Set.\\ set), (white, set)]
+                    Left _ -> undefined
+        Nothing -> [tup]
+
 
 main :: IO ()
 main = do
@@ -80,11 +99,12 @@ main = do
                                 , occuCount 5
                                 ] initial
     let flooded = zip (randColors seed) $ floodAll id permuted
-    let arr = toPixelArray cols rows flooded
+    let pathed = List.concat $ (addPath permuted) <$> flooded
+    let arr = toPixelArray cols rows pathed
 
     let patharr = (tabulate 10 10 False (\(x, y) -> (x == 0 || y == 0 || x == 9 || y == 9)))
     let start = (0, 0) :: Point
     let end = (9, 9) :: Point
-    let path = pfind patharr start end
+    let path = either (\_ -> []) id $ pfind patharr start end
     print path
     saveMap "test.png" $ arr
