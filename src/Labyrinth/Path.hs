@@ -18,7 +18,6 @@ import qualified Data.Map as Map
 import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
 import Labyrinth.Util
-import Debug.Trace
 
 class PathGraph a b where
     getNeighbors :: a -> b -> [(b, Float)]
@@ -87,7 +86,7 @@ updatePath goal current closed s@(gs, fs, p) (nnode, ncost) =
                  let newFsop = Q.insert nnode f fs in
                  (newGs, newFsop, newPath)
             else s
-        Nothing -> trace "THIS IS AN ERROR" s
+        Nothing -> error "data structure inconsistent"
 
 -- | Find /a/ shortest path from the initial node to the goal node
 pfind :: (Ord b, Metric b, PathGraph a b)
