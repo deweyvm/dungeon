@@ -4,22 +4,24 @@ import Prelude hiding (concat, all, and)
 import Codec.Picture
 import System.Random
 import Data.Maybe
+import Data.Word
 import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Vector as Vec
 import Control.Applicative
+import Control.Parallel.Strategies
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.Flood
 import Labyrinth.Path
 
-type Color = PixelRGBA8
+type Color = (Word8, Word8, Word8, Word8)
 
 black :: Color
-black = PixelRGBA8 0 0 0 255
+black = (0, 0, 0, 255)
 
 white :: Color
-white = PixelRGBA8 255 255 255 255
+white = (255, 255, 255, 255)
 
 makeRandom :: Int -> Int -> Int -> Array2d Bool
 makeRandom seed cols rows =
@@ -53,13 +55,14 @@ clearBorder thick arr@(Array2d cols rows _) =
 
 randColors :: Int -> [Color]
 randColors seed =
- (\(r, g, b) -> PixelRGBA8 r g b 255) <$> colors
+ (\(r, g, b) -> (r, g, b, 255)) <$> colors
    where colors = zip3 (rand id) (rand (+1)) (rand (+2))
          rand f = (randoms . mkStdGen . f) seed
 
 saveMap :: FilePath -> Array2d Color -> IO ()
 saveMap path arr@(Array2d cols rows _) =
-    writePng path $ generateImage (getOrElse arr black) cols rows
+    writePng path $ generateImage (getOrElse colors (PixelRGBA8 0 0 0 255)) cols rows
+    where colors = (\(r, g, b, a) -> PixelRGBA8 r g b a) <$> arr
 
 toPixelArray :: Int -> Int -> [(Color, Set.Set Point)] -> Array2d Color
 toPixelArray cols rows pts =
@@ -99,8 +102,8 @@ main = do
                                 , occuCount 5
                                 ] initial
     let flooded = zip (randColors seed) $ floodAll id permuted
-    let pathed = List.concat $ (addPath permuted) <$> flooded
-    let arr = toPixelArray cols rows pathed
+    let pathed = ((parMap rdeepseq (addPath permuted)) flooded)
+    let arr = toPixelArray cols rows (List.concat $ pathed)
 
     let patharr = (tabulate 10 10 False (\(x, y) -> (x == 0 || y == 0 || x == 9 || y == 9)))
     let start = (0, 0) :: Point
