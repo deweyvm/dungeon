@@ -88,6 +88,8 @@ addPath arr tup@(color, area) =
                     Left _ -> undefined
         Nothing -> [tup]
 
+(<$=>) :: (NFData b) => (a -> b) -> [a] -> [b]
+f <$=> ls = (parMap rdeepseq) f ls
 
 main :: IO ()
 main = do
@@ -102,8 +104,8 @@ main = do
                                 , occuCount 5
                                 ] initial
     let flooded = zip (randColors seed) $ floodAll id permuted
-    let pathed = ((parMap rdeepseq (addPath permuted)) flooded)
-    let arr = toPixelArray cols rows (List.concat $ pathed)
+    let pathed = List.concat $ (addPath permuted) <$=> flooded
+    let arr = toPixelArray cols rows pathed
 
     let patharr = (tabulate 10 10 False (\(x, y) -> (x == 0 || y == 0 || x == 9 || y == 9)))
     let start = (0, 0) :: Point
