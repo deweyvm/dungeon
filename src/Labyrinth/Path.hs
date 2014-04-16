@@ -1,4 +1,15 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
+{-|
+Module      : Labyrinth.Path
+Description : pathfinding
+Copyright   : (c) deweyvm 2014
+License     : GPL-3
+Maintainer  : deweyvm
+Stability   : experimental
+Portability :
+
+Implementation of the A* pathfinding algorithm.
+-}
 module Labyrinth.Path(pfind) where
 
 import Prelude hiding(elem, all)
@@ -48,12 +59,12 @@ pfind graph start end = pathHelper graph $ path
                       Map.empty
                       end
 
-data Path b = Path (Set.Set b)       --ClosedSet
-                   (Set.Set b)   --OpenSet
-                   (Map.Map b Float) --g scoroe
-                   (Map.Map b Float) --f score
-                   (Map.Map b b)     --PathSoFar
-                   b                 --goal
+data Path b = Path (Set.Set b)       -- ClosedSet
+                   (Set.Set b)       -- OpenSet
+                   (Map.Map b Float) -- g scoroe
+                   (Map.Map b Float) -- f score
+                   (Map.Map b b)     -- PathSoFar
+                   b                 -- goal node
 
 rewindPath :: Ord b => Map.Map b b -> b -> [b] -> [b]
 rewindPath path end sofar =

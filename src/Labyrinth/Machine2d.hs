@@ -28,11 +28,13 @@ occuCount k arr = (\pt _ -> (countOccupants id arr pt) >= k) <$*> arr
 negate :: Array2d Bool -> Array2d Bool
 negate = (<$>) not
 
+-- | Clears vertical strips with a regular spacing
 vertStrip :: Bool -> Int -> Array2d Bool -> Array2d Bool
 vertStrip b mods =
     (<$*>) (\(i, j) p -> select p b (modZero i || modZero j))
     where modZero k = k `mod` mods == 0
 
+-- | Clears a border around the edge of the array
 clearBorder :: Int -> Array2d Bool -> Array2d Bool
 clearBorder thick arr@(Array2d cols rows _) =
     (\(i, j) p -> i < thick || j < thick || i > cols - thick - 1 || j > rows - thick - 1 || p) <$*> arr

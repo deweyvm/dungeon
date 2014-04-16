@@ -45,7 +45,7 @@ toPixelArray cols rows pts =
     where found :: Point -> Maybe Color
           found pt = fst <$> List.find (\(_, set) -> Set.member pt set) pts
 
--- | retrieves the minimal and maximal elements of the set along with the
+-- | Retrieves the minimal and maximal elements of the set along with the
 -- set stripped of those elements or Nothing if not enough members exist
 -- in the given set
 minMaxView :: Set.Set a -> Maybe (a, a, Set.Set a)
