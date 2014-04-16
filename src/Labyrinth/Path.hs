@@ -38,10 +38,10 @@ mkPath initial goal = Path Set.empty
                            goal
 
 
-data Path b = Path (Set.Set b)       -- ClosedSet
-                   (Map.Map b Float) -- g scoroe
-                   (Q.PSQ b Float) -- f score, open set
-                   (Map.Map b b)     -- PathSoFar
+data Path b = Path (Set.Set b)       -- closed set
+                   (Map.Map b Float) -- g score
+                   (Q.PSQ b Float)   -- f score, open set
+                   (Map.Map b b)     -- path so far
                    b                 -- goal node
 
 rewindPath :: Ord b => Map.Map b b -> b -> [b] -> [b]
@@ -74,20 +74,20 @@ updatePath :: (Ord b, Metric b)
            -> (Map.Map b Float, Q.PSQ b Float, Map.Map b b)
            -> (b, Float)
            -> (Map.Map b Float, Q.PSQ b Float, Map.Map b b)
-updatePath goal current closed s@(g, fo, p) (nnode, ncost) =
+updatePath goal current closed s@(gs, fs, p) (nnode, ncost) =
     if Set.member nnode closed
     then s
-    else case Map.lookup current g of
-        Just tg ->
-            let tg' = tg + ncost in
-
-            if tg' < tg || not (qMember nnode fo)
-            then let newPath = Map.insert nnode current p in
-                 let newGs = Map.insert nnode tg' g in
-                 let newFsop = Q.insert nnode (tg' + guessLength nnode goal) fo in
+    else case Map.lookup current gs of
+        Just g ->
+            let g' = g + ncost in
+            if g' < g || not (qMember nnode fs)
+            then let f = (g' + guessLength nnode goal) in
+                 let newPath = Map.insert nnode current p in
+                 let newGs = Map.insert nnode g' gs in
+                 let newFsop = Q.insert nnode f fs in
                  (newGs, newFsop, newPath)
             else s
-        Nothing -> s
+        Nothing -> trace "THIS IS AN ERROR" s
 
 -- | Find /a/ shortest path from the initial node to the goal node
 pfind :: (Ord b, Metric b, PathGraph a b)

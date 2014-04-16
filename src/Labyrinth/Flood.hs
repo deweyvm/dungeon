@@ -10,7 +10,7 @@ Portability : unknown
 
 Implementation of flood fill for Array2d's.
 -}
-module Labyrinth.Flood(floodFill, floodAll, getNeighbors) where
+module Labyrinth.Flood(floodFill, floodAll, getNeighbors8) where
 
 import Prelude hiding (foldl)
 import qualified Data.Set as Set
@@ -27,13 +27,13 @@ mkFlood :: Point -> Flood
 mkFlood = liftM2 Flood Set.singleton singleton
 
 
-neighbors :: [Point]
-neighbors = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
+neighbors8 :: [Point]
+neighbors8 = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
 
 -- | Retrieves the 8 neighbors of a 2d point
-getNeighbors :: Point -> [Point]
-getNeighbors (i, j) = map ((i +) *** (j +)) neighbors
--- (\(x, y) -> (i + x, j + y)) === (i +) *** (j +)
+getNeighbors8 :: Point -> [Point]
+getNeighbors8 (i, j) = map ((i +) *** (j +)) neighbors8
+-- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
 
 filterPoints :: forall a . Array2d a -> ((Point,a) -> Bool) -> [Point] -> [Point]
 filterPoints arr f pts =
@@ -50,7 +50,7 @@ floodHelper f arr depth (Flood pts (viewl -> pt :< work)) =
     floodHelper f arr (depth + 1) (Flood newPoints newQueue)
     where newPoints = (pts `Set.union` Set.fromList ns)
           newQueue = (fromList ns) >< work
-          ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors pt)
+          ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors8 pt)
 
 -- | Flood fills starting from a given point
 floodFill :: Point         -- ^ the initial seed point

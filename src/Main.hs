@@ -17,21 +17,23 @@ import Labyrinth.Path
 import qualified Labyrinth.Machine2d as M
 import Debug.Trace
 
-
-
 instance Solid Bool where
     isSolid = id
 
+
+euclid :: Point -> Point -> Float
+euclid (i, j) (x, y) =  (sqrt (xx + yy))
+        where xx = sq (x - i)
+              yy = sq (y - j)
+              sq= (** 2) . fromIntegral
+
 instance Solid a => PathGraph (Array2d a) Point where
-    getNeighbors arr pt = (\pp -> (pp, guessLength pp pt)) <$> fst <$> filtered
+    getNeighbors arr pt = (\pp -> (pp, euclid pp pt)) <$> fst <$> filtered
         where filtered = filter (isSolid . snd) ns
-              ns = catMaybes $ (geti (zipWithIndex arr)) <$> F.getNeighbors pt
+              ns = catMaybes $ (geti (zipWithIndex arr)) <$> F.getNeighbors8 pt
 
 instance Metric Point where
-    guessLength (i, j) (x, y) = sqrt (xx + yy)
-        where xx :: Float = sq (x - i)
-              yy :: Float = sq (y - j)
-              sq :: Int -> Float = (** 2) . fromIntegral
+    guessLength = (/ 1.5) .: euclid
 
 
 type Color = (Word8, Word8, Word8)
@@ -49,9 +51,8 @@ makeRandom seed cols rows =
 
 randColors :: Int -> [Color]
 randColors seed =
-   colors
-   where colors = zip3 (rand id) (rand (+1)) (rand (+2))
-         rand f = (randoms . mkStdGen . f) seed
+   zip3 (rand id) (rand (+1)) (rand (+2))
+   where rand f = (randoms . mkStdGen . f) seed
 
 saveMap :: FilePath -> Array2d Color -> IO ()
 saveMap path arr@(Array2d cols rows _) =
