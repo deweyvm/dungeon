@@ -1,9 +1,22 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleInstances #-}
+{-|
+Module      : Labyrinth.Util
+Description : utilities
+Copyright   : (c) deweyvm 2014
+License     : MIT
+Maintainer  : deweyvm
+Stability   : experimental
+Portability : unknown
+
+General utility functions for labyrinth routines.
+-}
 module Labyrinth.Util where
 
 import Debug.Trace
 import Data.Function
 import Control.Parallel.Strategies
+
+type Point = (Int,Int)
 
 myTrace :: Show a => a -> a
 myTrace x = traceShow x x

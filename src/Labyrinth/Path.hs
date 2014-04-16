@@ -1,16 +1,16 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses #-}
 {-|
 Module      : Labyrinth.Path
 Description : pathfinding
 Copyright   : (c) deweyvm 2014
-License     : GPL-3
+License     : MIT
 Maintainer  : deweyvm
 Stability   : experimental
-Portability :
+Portability : unknown
 
 Implementation of the A* pathfinding algorithm.
 -}
-module Labyrinth.Path(pfind) where
+module Labyrinth.Path(pfind, PathGraph(..), Metric(..), Solid(..)) where
 
 import Prelude hiding(elem, all)
 import Control.Applicative
@@ -19,8 +19,7 @@ import qualified Data.Map as Map
 import Data.Foldable(minimumBy)
 --import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
-import Labyrinth.Data.Array2d(Array2d,Point,geti,zipWithIndex)
-import qualified Labyrinth.Flood as F
+
 --import Debug.Trace
 
 
@@ -33,31 +32,15 @@ class Metric a where
 class Solid a where
     isSolid :: a -> Bool
 
-instance Solid Bool where
-    isSolid = id
 
-instance Solid a => PathGraph (Array2d a) Point where
-    getNeighbors arr pt = (\pp -> (pp, guessLength pp pt)) <$> (fst <$> filtered)
-        where filtered = filter (isSolid . snd) ns
-              ns = catMaybes $ (geti (zipWithIndex arr)) <$> F.getNeighbors pt
+mkPath :: Metric b => b -> b -> Path b
+mkPath initial goal = Path Set.empty
+                           (Set.singleton initial)
+                           (Map.singleton initial 0)
+                           (Map.singleton initial $ guessLength initial goal)
+                           Map.empty
+                           goal
 
-instance Metric Point where
-    guessLength (i, j) (x, y) = sqrt (xx + yy)
-        where xx = sq (x - i)
-              yy = sq (y - j)
-              sq = (** 2) . fromIntegral
---f x = g x + h x
---g x = cost so far
---h x = guess cost of the path
-pfind :: forall a b.(Ord b, Metric b, Show b, PathGraph a b) => a -> b -> b -> Either String [b]
-pfind graph start end = pathHelper graph $ path
-    where path :: Path b
-          path = Path Set.empty
-                      (Set.singleton start)
-                      (Map.singleton start 0)
-                      (Map.singleton start $ guessLength start end)
-                      Map.empty
-                      end
 
 data Path b = Path (Set.Set b)       -- ClosedSet
                    (Set.Set b)       -- OpenSet
@@ -122,3 +105,12 @@ updatePath goal current closed s@(g, f, p, o) n =
 
              Nothing -> s
 
+-- | Find /a/ shortest path from the initial node to the goal node.
+pfind :: (Ord b, Metric b, Show b, PathGraph a b)
+      => a                 -- ^ The graph to be traversed
+      -> b                 -- ^ The initial node
+      -> b                 -- ^ The goal node
+      -> Either String [b] {- ^ Either a string explaining why a path could
+                                not be found, or the found shortest path in
+                                order from initial to goal.-}
+pfind graph initial goal = pathHelper graph $ mkPath initial goal

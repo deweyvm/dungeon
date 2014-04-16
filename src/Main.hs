@@ -1,4 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns, InstanceSigs, BangPatterns #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns, InstanceSigs, BangPatterns, FlexibleInstances, TypeSynonymInstances,MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import Prelude hiding (concat, all, and, foldr)
 import Codec.Picture
@@ -7,13 +8,31 @@ import Data.Word
 import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Vector as Vec
+import Data.Maybe
 import Control.Applicative
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
-import Labyrinth.Flood
+import qualified Labyrinth.Flood as F
 import Labyrinth.Path
 import qualified Labyrinth.Machine2d as M
 import Debug.Trace
+
+
+
+instance Solid Bool where
+    isSolid = id
+
+instance Solid a => PathGraph (Array2d a) Point where
+    getNeighbors arr pt = (\pp -> (pp, guessLength pp pt)) <$> fst <$> filtered
+        where filtered = filter (isSolid . snd) ns
+              ns = catMaybes $ (geti (zipWithIndex arr)) <$> F.getNeighbors pt
+
+instance Metric Point where
+    guessLength (i, j) (x, y) = sqrt (xx + yy)
+        where xx = sq (x - i)
+              yy = sq (y - j)
+              sq = (** 2) . fromIntegral
+
 
 type Color = (Word8, Word8, Word8)
 
@@ -58,11 +77,11 @@ addPath :: Array2d Bool -> (Color, Set.Set Point) -> [(Color, Set.Set Point)]
 addPath arr tup@(color, area) =
     case minMaxView area of
         Just (x, y, rest) ->
-            let path = pfind arr x y in
-                case path of
-                    Right pts -> let set = Set.fromList pts in [(color, rest Set.\\ set), (white, set)]
-                    Left _ -> trace "Failed to find path" [tup]
-        Nothing -> [tup]
+            case pfind arr x y of
+                Right pts -> [(color, rest Set.\\ set), (white, set)]
+                   where set = Set.fromList pts
+                Left _ -> trace "Failed to find path" [tup]
+        Nothing -> trace "Region too small" [tup]
 
 
 main :: IO ()
@@ -77,7 +96,8 @@ main = do
                                  , M.vertStrip True 4
                                  , M.occuCount 5
                                  ]
-    let flooded = zip (randColors seed) $ floodAll id permuted
+    let flooded = zip (randColors seed) $ F.floodAll id permuted
     let pathed = List.concat $ (addPath permuted) <$=> flooded
     let arr = toPixelArray cols rows pathed
+    print "test"
     saveMap "test.png" $ arr
