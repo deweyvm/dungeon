@@ -1,5 +1,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Labyrinth.Machine2d((<.>), occuCount, negate, vertStrip, clearBorder) where
+
+{-|
+Module      : Labyrinth.Machine2d
+Description : labyrinth state machine
+Copyright   : (c) deweyvm 2014
+License     : MIT
+Maintainer  : deweyvm
+Stability   : experimental
+Portability : unknown
+
+2d state machine automata generating functions.
+-}
+module Labyrinth.Machine2d(
+    (<.>),
+    occuCount,
+    negate,
+    vertStrip,
+    clearBorder
+) where
 
 import Prelude hiding(foldr, negate)
 import Data.Maybe
@@ -18,13 +36,14 @@ getOccupants arr (i, j) =
     extract [ (i + x, j + y) | x <- [-1..1], y <- [-1..1] ]
     where extract = catMaybes . map (geti arr)
 
-
 countOccupants :: (a -> Bool) -> Array2d a -> Point -> Int
 countOccupants f = (count f) .: (getOccupants)
 
+-- | Maps to True iff the number of occupants of a given node is >= k
 occuCount :: Int -> Array2d Bool -> Array2d Bool
 occuCount k arr = (\pt _ -> (countOccupants id arr pt) >= k) <$*> arr
 
+-- | Negates the entire array
 negate :: Array2d Bool -> Array2d Bool
 negate = (<$>) not
 

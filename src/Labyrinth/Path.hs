@@ -56,18 +56,17 @@ rewindPath path end sofar =
         Nothing -> sofar
 
 
-getMin :: forall a b.(Ord a, Ord b) => Map.Map a b -> Set.Set a -> Maybe (a, Set.Set a)
+getMin :: (Ord a, Ord b) => Map.Map a b -> Set.Set a -> Maybe (a, Set.Set a)
 getMin fs set =
-    let r = Set.toList $ Set.map (\s -> ((,) s) <$> (Map.lookup s fs)) set
-        lst :: [(a, b)]
-        lst = catMaybes $ r in
+    let pairs = Set.map (\s -> ((,) s) <$> (Map.lookup s fs)) set in
+    let lst = (catMaybes . Set.toList) pairs in
     if length lst == 0
     then Nothing
     else let elt = fst (minimumBy (\(_, y1) (_, y2) -> compare y1 y2) lst) in
          Just (elt, Set.delete elt set)
 
 
-pathHelper :: forall a b.(Ord b, Metric b, Show b, PathGraph a b) => a -> Path b -> Either String [b]
+pathHelper :: forall a b.(Ord b, Metric b, PathGraph a b) => a -> Path b -> Either String [b]
 pathHelper coll (Path closedSet openSet gs fs path goal) =
     case getMin fs openSet of
         Just (current, newOpen) -> processCurrent current newOpen
@@ -92,21 +91,21 @@ updatePath :: (Ord b, Metric b)
 updatePath goal current closed s@(g, f, p, o) n =
     if Set.member n closed
     then s
-    else
-        case Map.lookup current g of
-             Just tg -> let tg' = tg + guessLength n current in
-                        if tg' < tg || Set.notMember n o
-                        then let newPath = Map.insert n current p in
-                             let newGs = Map.insert n tg' g in
-                             let newFs = Map.insert n (tg' + guessLength n goal) f in
-                             let newOp = Set.insert n o in
-                             (newGs, newFs, newPath, newOp)
-                        else s
+    else case Map.lookup current g of
+        Just tg ->
+            let tg' = tg + guessLength n current in
+            if tg' < tg || Set.notMember n o
+            then let newPath = Map.insert n current p in
+                 let newGs = Map.insert n tg' g in
+                 let newFs = Map.insert n (tg' + guessLength n goal) f in
+                 let newOp = Set.insert n o in
+                 (newGs, newFs, newPath, newOp)
+            else s
 
-             Nothing -> s
+        Nothing -> s
 
--- | Find /a/ shortest path from the initial node to the goal node.
-pfind :: (Ord b, Metric b, Show b, PathGraph a b)
+-- | Find /a/ shortest path from the initial node to the goal node
+pfind :: (Ord b, Metric b, PathGraph a b)
       => a                 -- ^ The graph to be traversed
       -> b                 -- ^ The initial node
       -> b                 -- ^ The goal node

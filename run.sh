@@ -7,9 +7,10 @@ mytime() {
 
 pushd src &> /dev/null && \
 echo "Generating documentation..." &&\
-haddock -h -o ../docs Main.hs &> /dev/null
+out=`haddock -h -o ../docs Main.hs`
 if [[ $? -ne 0 ]] ; then
     echo WARNING: haddock failure
+    echo $out
 fi
 popd &> /dev/null
 echo -n "Building... "

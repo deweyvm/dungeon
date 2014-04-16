@@ -76,13 +76,13 @@ zipWithIndex arr = (,) <$*> arr
 foldli :: (a -> (Point, b) -> a) -> a -> Array2d b -> a
 foldli f x arr = Vec.foldl f x $ (toVec . zipWithIndex) arr
 
--- | Finds the index and element satisfying a predicate.
+-- | Finds the index and element satisfying a predicate
 find :: (a -> Bool) -> Array2d a -> Maybe (Point, a)
 find f arr =
     let (Array2d _ _ zipped) = zipWithIndex arr in
     Vec.find (\(_, e) -> f e) zipped
 
--- | Creates a new Array2d from a generating function.
+-- | Creates a new Array2d from a generating function
 tabulate :: Int -> Int -> a -> (Point -> a) -> Array2d a
 tabulate cols rows initial f =
     (\p _ -> f p) <$*>  base
