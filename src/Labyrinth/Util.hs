@@ -35,7 +35,7 @@ divf = (/) `on` fromIntegral
 (.::) :: (d -> e) -> (a -> b -> c -> d) -> (a -> b -> c -> e)
 (.::) = (.:) . (.)
 
--- | Count the numer of elements in a list
+-- | Count the number of elements in a list satisfying a predicate
 count ::  (a -> Bool) -> [a] -> Int
 count f = length . (filter f)
 

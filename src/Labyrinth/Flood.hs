@@ -20,11 +20,11 @@ import Labyrinth.PathGraph
 
 data FloodNode a = FloodNode Int a
 
--- | Returns the distance a flooded node is from the origin node.
+-- | Returns the distance a flooded node is from the origin node
 getDepth :: FloodNode a -> Int
 getDepth (FloodNode i _) = i
 
--- | Returns the coordinate of a flooded node.
+-- | Returns the coordinate of a flooded node
 getNode :: FloodNode a -> a
 getNode (FloodNode _ x) = x
 
@@ -39,9 +39,10 @@ instance Ord a => Ord (FloodNode a) where
 mkFlood :: a -> Flood a
 mkFlood = liftM2 Flood (Set.singleton . (FloodNode 0)) Seq.singleton
 
+-- | Floods a graph starting from the given node
 floodFill :: (PathGraph a b, Ord b)
           => a                     -- ^ the graph to be flooded
-          -> b                     -- ^ the seed point to start
+          -> b                     -- ^ the seed point
           -> Set.Set (FloodNode b) -- ^ the set of flooded nodes
 floodFill graph pt = floodHelper graph 0 $ mkFlood pt
 
@@ -55,7 +56,7 @@ floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
           ns = filter (\x -> not (Set.member (FloodNode 0 x) pts)) $ fst <$> getNeighbors graph pt
           lst = zipWith ($) (FloodNode <$> (repeat depth)) ns
 
-
+-- | Floods all given passable nodes on a given graph
 floodAll :: (PathGraph a b, Ord b)
          => a                       -- ^ the graph to be flooded
          -> Set.Set b               -- ^ the set of all open nodes
@@ -78,6 +79,8 @@ floodAllHelper graph open sofar = do
                        floodAllHelper graph newOpen (filled:sofar)
         Nothing -> sofar
 
+{- | Floods all regions of r graph reachable from the given open nodes
+     Discards depth, leaving only the filled coordinates-}
 simpleFloodAll :: (PathGraph a b, Ord b)
                => a           -- ^ the graph to be flooded
                -> Set.Set b   -- ^ the set of all open nodes
