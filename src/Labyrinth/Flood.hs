@@ -8,76 +8,74 @@ Maintainer  : deweyvm
 Stability   : experimental
 Portability : unknown
 
-Implementation of flood fill for Array2d's.
+Implementation of flood fill for arbitrary graphs.
 -}
-module Labyrinth.Flood(floodFill, floodAll, getNeighbors8) where
+module Labyrinth.GenFlood(floodFill, floodAll, simpleFloodAll, getDepth, getNode) where
 
-import Prelude hiding (foldl)
-import qualified Data.Set as Set
-import Data.Sequence hiding (take, zip, filter)
-import Data.Maybe
-import Control.Applicative
 import Control.Monad
-import Control.Arrow((***))
-import Labyrinth.Data.Array2d
-import Labyrinth.Util
-data Flood = Flood (Set.Set Point) (Seq Point)
+import Control.Applicative
+import qualified Data.Set as Set
+import qualified Data.Sequence as Seq
+import Labyrinth.PathGraph
+data FloodNode a = FloodNode Int a
 
-mkFlood :: Point -> Flood
-mkFlood = liftM2 Flood Set.singleton singleton
+getDepth :: FloodNode a -> Int
+getDepth (FloodNode i _) = i
 
+getNode :: FloodNode a -> a
+getNode (FloodNode _ x) = x
 
-neighbors8 :: [Point]
-neighbors8 = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
+data Flood a = Flood (Set.Set (FloodNode a)) (Seq.Seq a)
 
--- | Retrieves the 8 neighbors of a 2d point
-getNeighbors8 :: Point -> [Point]
-getNeighbors8 (i, j) = map ((i +) *** (j +)) neighbors8
--- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
+instance Eq a => Eq (FloodNode a) where
+    (FloodNode _ x) == (FloodNode _ y) = x == y
 
-filterPoints :: forall a . Array2d a -> ((Point,a) -> Bool) -> [Point] -> [Point]
-filterPoints arr f pts =
-    let x = zip pts $ (geti arr) <$> pts in
-    let y = catMaybes $ pairMaybe <$> x in
-    fst <$> (filter f y)
-  where pairMaybe :: forall c b . (c, Maybe b) -> Maybe (c, b)
-        pairMaybe (x, Just y) = Just (x, y)
-        pairMaybe (_, Nothing) = Nothing
+instance Ord a => Ord (FloodNode a) where
+    compare (FloodNode _ x) (FloodNode _ y) = compare x y
 
-floodHelper :: (a -> Bool) -> Array2d a -> Int -> Flood -> Set.Set Point
-floodHelper _ _ _ (Flood pts (viewl -> EmptyL)) = pts
-floodHelper f arr depth (Flood pts (viewl -> pt :< work)) =
-    floodHelper f arr (depth + 1) (Flood newPoints newQueue)
-    where newPoints = (pts `Set.union` Set.fromList ns)
-          newQueue = (fromList ns) >< work
-          ns = filterPoints arr (\(p, elt) -> f elt && not (Set.member p pts)) (getNeighbors8 pt)
+mkFlood :: a -> Flood a
+mkFlood = liftM2 Flood (Set.singleton . (FloodNode 0)) Seq.singleton
 
--- | Flood fills starting from a given point
-floodFill :: Point         -- ^ the initial seed point
-          -> (a -> Bool)   -- ^ whether or not an element is \"solid\"
-          -> Array2d a     -- ^ the grid to be flooded
-          -> Set.Set Point -- ^ the set of points in the flood fill
-floodFill pt f arr =
-    floodHelper f arr 0 $ mkFlood pt
-
-getSolid :: (a -> Bool) -> Array2d a -> [Point]
-getSolid f arr = foldli (\xs (pt, x) -> if f x then (pt:xs) else xs) [] arr
+floodFill :: (PathGraph a b, Ord b, Show b) => a -> b -> Set.Set (FloodNode b)
+floodFill graph pt = floodHelper graph 0 $ mkFlood pt
 
 
--- | Flood fills all regions in a given array
-floodAll :: (a -> Bool)     -- ^ whether or not an element is \"solid\"
-         -> Array2d a       -- ^ the grid to be flooded
-         -> [Set.Set Point] -- ^ the resulting flooded regions
-floodAll f arr = floodAllHelper f arr (Set.fromList (getSolid f arr)) []
+floodHelper :: (PathGraph a b, Ord b, Show b) => a -> Int -> Flood b -> Set.Set (FloodNode b)
+floodHelper _ _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
+floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
+    floodHelper graph (depth + 1) (Flood full q)
+    where q = (Seq.fromList ns) Seq.>< work
+          full = Set.union pts (Set.fromList lst)
+          ns = filter (\x -> not (Set.member (FloodNode 0 x) pts)) $ fst <$> getNeighbors graph pt
+          lst = zipWith ($) (FloodNode <$> (repeat depth)) ns
 
-floodAllHelper :: (a -> Bool)
-               -> Array2d a
-               -> Set.Set Point   --solid points remaining
-               -> [Set.Set Point] --current collection of regions
-               -> [Set.Set Point]
-floodAllHelper f arr pts sofar =
-    case Set.minView pts of
-        Just (x, _) -> let filled = floodFill x f arr in
-                       let pointsLeft = Set.difference pts filled in
-                       floodAllHelper f arr pointsLeft (filled:sofar)
+
+floodAll :: (PathGraph a b, Ord b, Show b)
+         => a                  -- ^ the grid to be flooded
+         -> Set.Set b   -- ^ get all clear elements from the graph
+         -> [Set.Set (FloodNode b)] -- ^ the resulting flooded regions
+floodAll graph open = floodAllHelper graph open []
+
+
+hackdiff :: (Ord b) => Set.Set (FloodNode b) -> Set.Set b -> Set.Set b
+hackdiff s r = Set.difference r (Set.map getNode s)
+
+floodAllHelper :: (PathGraph a b, Ord b, Show b)
+               => a
+               -> Set.Set b
+               -> [Set.Set (FloodNode b)]
+               -> [Set.Set (FloodNode b)]
+floodAllHelper graph open sofar =
+    case Set.minView open of
+        Just (x, _) -> let filled = floodFill graph x in
+                       let newOpen = hackdiff filled open in
+                       floodAllHelper graph newOpen (filled:sofar)
         Nothing -> sofar
+
+simpleFloodAll :: (PathGraph a b, Ord b, Show b)
+               => a
+               -> Set.Set b
+               -> [Set.Set b]
+simpleFloodAll graph open =
+    let flooded = floodAll graph open in
+    (Set.map getNode) <$> flooded

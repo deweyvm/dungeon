@@ -10,16 +10,25 @@ import qualified Data.Set as Set
 import qualified Data.Vector as Vec
 import Data.Maybe
 import Control.Applicative
+import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
-import qualified Labyrinth.Flood as F
 import Labyrinth.Path
 import qualified Labyrinth.Machine2d as M
+import qualified Labyrinth.GenFlood as F
 import Debug.Trace
 
-instance Solid Bool where
-    isSolid = id
+instance Open Bool where
+    isOpen = id
 
+
+neighbors8 :: [Point]
+neighbors8 = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
+
+-- | Retrieves the 8 neighbors of a 2d point
+getNeighbors8 :: Point -> [Point]
+getNeighbors8 (i, j) = map ((i +) *** (j +)) neighbors8
+-- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
 
 euclid :: Point -> Point -> Float
 euclid (i, j) (x, y) =  (sqrt (xx + yy))
@@ -27,10 +36,10 @@ euclid (i, j) (x, y) =  (sqrt (xx + yy))
               yy = sq (y - j)
               sq= (** 2) . fromIntegral
 
-instance Solid a => PathGraph (Array2d a) Point where
-    getNeighbors arr pt = (\pp -> (pp, euclid pp pt)) <$> fst <$> filtered
-        where filtered = filter (isSolid . snd) ns
-              ns = catMaybes $ (geti (zipWithIndex arr)) <$> F.getNeighbors8 pt
+instance Open a => PathGraph (Array2d a) Point where
+    getNeighbors arr pt = (\p -> (p, euclid p pt)) <$> fst <$> filtered
+        where filtered = filter (isOpen . snd) ns
+              ns = catMaybes $ (geti (zipWithIndex arr)) <$> getNeighbors8 pt
 
 instance Metric Point where
     guessLength = (/ 1.5) .: euclid
@@ -84,13 +93,16 @@ addPath arr tup@(color, area) =
                 Left _ -> trace "Failed to find path" [tup]
         Nothing -> [tup]
 
+getOpen :: Open a => Array2d a -> Set.Set Point
+getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> if isOpen x then (pt:xs) else xs) [] arr
+
 
 main :: IO ()
 main = do
     --seed :: Int <- randomIO
     let seed = 0
-    let cols = 200
-    let rows = 200
+    let cols = 100
+    let rows = 100
     let initial = makeRandom seed cols rows
     let permuted = initial M.<.> [ M.negate
                                  , M.occuCount 7
@@ -98,8 +110,10 @@ main = do
                                  , M.vertStrip True 4
                                  , M.occuCount 5
                                  ]
-    let flooded = zip (randColors seed) $ F.floodAll id permuted
+    let open = getOpen permuted
+    let flooded = zip (randColors seed) $ F.simpleFloodAll permuted open
     let pathed = List.concat $ (addPath permuted) <$=> flooded
     let arr = toPixelArray cols rows pathed
 
-    saveMap "test.png" $ arr
+    saveMap "mask.png" $ (select white black) <$> permuted
+    saveMap "flood.png" $ arr

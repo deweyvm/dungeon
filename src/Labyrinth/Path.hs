@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
 {-|
 Module      : Labyrinth.Path
 Description : pathfinding
@@ -10,7 +10,7 @@ Portability : unknown
 
 Implementation of the A* pathfinding algorithm.
 -}
-module Labyrinth.Path(pfind, PathGraph(..), Metric(..), Solid(..)) where
+module Labyrinth.Path(pfind, PathGraph(..), Metric(..), Open(..)) where
 
 import Prelude hiding(elem, all)
 import Data.Maybe
@@ -18,16 +18,7 @@ import qualified Data.Map as Map
 import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
 import Labyrinth.Util
-
-class PathGraph a b where
-    getNeighbors :: a -> b -> [(b, Float)]
-
-class Metric a where
-    guessLength :: a -> a -> Float
-
-class Solid a where
-    isSolid :: a -> Bool
-
+import Labyrinth.PathGraph
 
 mkPath :: (Metric a, Ord a) => a -> a -> Path a
 mkPath initial goal = Path Set.empty
