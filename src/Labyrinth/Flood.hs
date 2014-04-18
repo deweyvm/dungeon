@@ -17,11 +17,14 @@ import Control.Applicative
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import Labyrinth.PathGraph
+
 data FloodNode a = FloodNode Int a
 
+-- | Returns the distance a flooded node is from the origin node.
 getDepth :: FloodNode a -> Int
 getDepth (FloodNode i _) = i
 
+-- | Returns the coordinate of a flooded node.
 getNode :: FloodNode a -> a
 getNode (FloodNode _ x) = x
 
@@ -36,12 +39,15 @@ instance Ord a => Ord (FloodNode a) where
 mkFlood :: a -> Flood a
 mkFlood = liftM2 Flood (Set.singleton . (FloodNode 0)) Seq.singleton
 
-floodFill :: (PathGraph a b, Ord b, Show b) => a -> b -> Set.Set (FloodNode b)
+floodFill :: (PathGraph a b, Ord b)
+          => a                     -- ^ the graph to be flooded
+          -> b                     -- ^ the seed point to start
+          -> Set.Set (FloodNode b) -- ^ the set of flooded nodes
 floodFill graph pt = floodHelper graph 0 $ mkFlood pt
 
 
-floodHelper :: (PathGraph a b, Ord b, Show b) => a -> Int -> Flood b -> Set.Set (FloodNode b)
-floodHelper _ _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
+floodHelper :: (PathGraph a b, Ord b) => a -> Int -> Flood b -> Set.Set (FloodNode b)
+floodHelper     _     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
 floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
     floodHelper graph (depth + 1) (Flood full q)
     where q = (Seq.fromList ns) Seq.>< work
@@ -50,32 +56,31 @@ floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
           lst = zipWith ($) (FloodNode <$> (repeat depth)) ns
 
 
-floodAll :: (PathGraph a b, Ord b, Show b)
-         => a                  -- ^ the grid to be flooded
-         -> Set.Set b   -- ^ get all clear elements from the graph
+floodAll :: (PathGraph a b, Ord b)
+         => a                       -- ^ the graph to be flooded
+         -> Set.Set b               -- ^ the set of all open nodes
          -> [Set.Set (FloodNode b)] -- ^ the resulting flooded regions
 floodAll graph open = floodAllHelper graph open []
 
 
-hackdiff :: (Ord b) => Set.Set (FloodNode b) -> Set.Set b -> Set.Set b
-hackdiff s r = Set.difference r (Set.map getNode s)
+hackdiff :: (Ord b) => Set.Set b -> Set.Set (FloodNode b) -> Set.Set b
+hackdiff r s = Set.difference r (Set.map getNode s)
 
-floodAllHelper :: (PathGraph a b, Ord b, Show b)
+floodAllHelper :: (PathGraph a b, Ord b)
                => a
                -> Set.Set b
                -> [Set.Set (FloodNode b)]
                -> [Set.Set (FloodNode b)]
-floodAllHelper graph open sofar =
+floodAllHelper graph open sofar = do
     case Set.minView open of
         Just (x, _) -> let filled = floodFill graph x in
-                       let newOpen = hackdiff filled open in
+                       let newOpen = hackdiff open filled in
                        floodAllHelper graph newOpen (filled:sofar)
         Nothing -> sofar
 
-simpleFloodAll :: (PathGraph a b, Ord b, Show b)
-               => a
-               -> Set.Set b
-               -> [Set.Set b]
+simpleFloodAll :: (PathGraph a b, Ord b)
+               => a           -- ^ the graph to be flooded
+               -> Set.Set b   -- ^ the set of all open nodes
+               -> [Set.Set b] -- ^ the resulting flooded regions
 simpleFloodAll graph open =
-    let flooded = floodAll graph open in
-    (Set.map getNode) <$> flooded
+    (Set.map getNode) <$> floodAll graph open
