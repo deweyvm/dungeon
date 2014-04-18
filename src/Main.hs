@@ -15,7 +15,7 @@ import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.Path
 import qualified Labyrinth.Machine2d as M
-import qualified Labyrinth.GenFlood as F
+import qualified Labyrinth.Flood as F
 import Debug.Trace
 
 instance Open Bool where

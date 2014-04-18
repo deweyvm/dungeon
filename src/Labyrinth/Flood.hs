@@ -10,7 +10,7 @@ Portability : unknown
 
 Implementation of flood fill for arbitrary graphs.
 -}
-module Labyrinth.GenFlood(floodFill, floodAll, simpleFloodAll, getDepth, getNode) where
+module Labyrinth.Flood(floodFill, floodAll, simpleFloodAll, getDepth, getNode) where
 
 import Control.Monad
 import Control.Applicative
