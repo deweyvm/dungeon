@@ -14,6 +14,7 @@ import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.Pathing.AStar
+import Labyrinth.PathGraph
 import qualified Labyrinth.Machine2d as M
 import qualified Labyrinth.Flood as F
 import Debug.Trace

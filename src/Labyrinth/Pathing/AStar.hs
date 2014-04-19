@@ -10,7 +10,7 @@ Portability : unknown
 
 Implementation of the A* pathfinding algorithm.
 -}
-module Labyrinth.Pathing.AStar(pfind, PathGraph(..), Metric(..), Open(..)) where
+module Labyrinth.Pathing.AStar(pfind) where
 
 import Prelude hiding(elem, all)
 import Data.Maybe
@@ -79,7 +79,7 @@ updatePath goal current closed s@(gs, fs, p) (nnode, ncost) =
             else s
         Nothing -> error "data structure inconsistent"
 
--- | Find /a/ shortest path from the initial node to the goal node
+-- | Find a shortest path from the initial node to the goal node
 pfind :: (Ord b, Metric b, PathGraph a b)
       => a                 -- ^ The graph to be traversed
       -> b                 -- ^ The initial node
