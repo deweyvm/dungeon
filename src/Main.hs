@@ -13,8 +13,10 @@ import Control.Applicative
 import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
-import Labyrinth.Pathing.AStar
 import Labyrinth.PathGraph
+import Labyrinth.Pathing.Util
+import qualified Labyrinth.Pathing.AStar as A
+import qualified Labyrinth.Pathing.JumpPoint as J
 import qualified Labyrinth.Machine2d as M
 import qualified Labyrinth.Flood as F
 import Debug.Trace
@@ -31,11 +33,6 @@ getNeighbors8 :: Point -> [Point]
 getNeighbors8 (i, j) = map ((i +) *** (j +)) neighbors8
 -- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
 
-euclid :: Point -> Point -> Float
-euclid (i, j) (x, y) =  (sqrt (xx + yy))
-        where xx = sq (x - i)
-              yy = sq (y - j)
-              sq= (** 2) . fromIntegral
 
 instance Open a => PathGraph (Array2d a) Point where
     getNeighbors arr pt = (\p -> (p, euclid p pt)) <$> fst <$> filtered
@@ -88,22 +85,22 @@ addPath :: Array2d Bool -> (Color, Set.Set Point) -> [(Color, Set.Set Point)]
 addPath arr tup@(color, area) =
     case minMaxView area of
         Just (x, y, rest) ->
-            case pfind arr x y of
+            case J.pfind arr x y of
                 Right pts -> [(color, rest Set.\\ set), (white, set)]
                    where set = Set.fromList pts
-                Left _ -> trace "Failed to find path" [tup]
+                Left s -> trace ("Failed to find path: " ++ s) [tup]
         Nothing -> [tup]
 
 getOpen :: Open a => Array2d a -> Set.Set Point
-getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> if isOpen x then (pt:xs) else xs) [] arr
+getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> (if isOpen x then (pt:) else id) xs) [] arr
 
 
 main :: IO ()
 main = do
     --seed :: Int <- randomIO
     let seed = 0
-    let cols = 100
-    let rows = 100
+    let cols = 110
+    let rows = 110
     let initial = makeRandom seed cols rows
     let permuted = initial M.<.> [ M.negate
                                  , M.occuCount 7
@@ -113,7 +110,7 @@ main = do
                                  ]
     let open = getOpen permuted
     let flooded = zip (randColors seed) $ F.simpleFloodAll permuted open
-    let pathed = List.concat $ (addPath permuted) <$=> flooded
+    let pathed = List.concat $ (addPath permuted) <$> flooded
     let arr = toPixelArray cols rows pathed
 
     saveMap "mask.png" $ (select white black) <$> permuted
