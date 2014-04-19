@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
 {-|
-Module      : Labyrinth.Path
+Module      : Labyrinth.AStar
 Description : pathfinding
 Copyright   : (c) deweyvm 2014
 License     : MIT
@@ -10,7 +10,7 @@ Portability : unknown
 
 Implementation of the A* pathfinding algorithm.
 -}
-module Labyrinth.Path(pfind, PathGraph(..), Metric(..), Open(..)) where
+module Labyrinth.Pathing.AStar(pfind, PathGraph(..), Metric(..), Open(..)) where
 
 import Prelude hiding(elem, all)
 import Data.Maybe

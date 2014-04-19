@@ -13,7 +13,7 @@ import Control.Applicative
 import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
-import Labyrinth.Path
+import Labyrinth.Pathing.AStar
 import qualified Labyrinth.Machine2d as M
 import qualified Labyrinth.Flood as F
 import Debug.Trace
