@@ -8,3 +8,4 @@ cabal-dev
 lines.txt
 *.png
 docs/
+temp

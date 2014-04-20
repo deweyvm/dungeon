@@ -15,8 +15,8 @@ import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.PathGraph
 import Labyrinth.Pathing.Util
-import qualified Labyrinth.Pathing.AStar as A
 import qualified Labyrinth.Pathing.JumpPoint as J
+import qualified Labyrinth.Pathing.AStar as A
 import qualified Labyrinth.Machine2d as M
 import qualified Labyrinth.Flood as F
 import Debug.Trace
@@ -97,20 +97,21 @@ getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> (if isOpen x then (pt:) else
 
 main :: IO ()
 main = do
-    --seed :: Int <- randomIO
-    let seed = 0
-    let cols = 110
-    let rows = 110
+    seed :: Int <- randomIO
+    --let seed = -135580466 -- 50, 50
+    let seed = -1555715895
+    print seed
+    let cols = 20
+    let rows = 20
     let initial = makeRandom seed cols rows
     let permuted = initial M.<.> [ M.negate
                                  , M.occuCount 7
-                                 , M.clearBorder 10
                                  , M.vertStrip True 4
                                  , M.occuCount 5
                                  ]
     let open = getOpen permuted
     let flooded = zip (randColors seed) $ F.simpleFloodAll permuted open
-    let pathed = List.concat $ (addPath permuted) <$> flooded
+    let pathed = List.concat $ (addPath permuted) <$=> flooded
     let arr = toPixelArray cols rows pathed
 
     saveMap "mask.png" $ (select white black) <$> permuted

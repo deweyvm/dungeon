@@ -24,7 +24,6 @@ import Labyrinth.PathGraph
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.Pathing.Util
-import Debug.Trace
 
 
 data Path a = Path (Set.Set a)       -- closed set
@@ -56,8 +55,8 @@ findNeighbors checkOpen graph n@(x, y) parents =
            let dx = dir (x - px) in
            let dy = dir (y - py) in
            let diag = (dx /= 0 && dy /= 0) in
-           let vert = (dx == 0 && checkOpen (x, y + dy)) in
-           let horiz = checkOpen (x + dx, y) in
+           let vert = (dx == 0) in
+           let horiz = True in
            let sel = select Nothing . Just in
            if diag
            then let v0 = sel (x, y + dy)
@@ -65,23 +64,32 @@ findNeighbors checkOpen graph n@(x, y) parents =
                 let v1 = sel (x + dx, y)
                              (checkOpen (x + dx, y)) in
                 let v2 = sel (x + dx, y + dy)
-                             (checkOpen (x + dx, y + dy) || checkOpen (x + dx, y)) in
+                             (checkOpen (x + dx, y + dy)) in
                 let v3 = sel (x - dx, y + dy)
-                             ((not . checkOpen) (x - dx, y) && checkOpen (x, y + dy)) in
+                             ((not . checkOpen) (x - dx, y) &&
+                                     checkOpen (x, y + dy) &&
+                                     checkOpen (x - dx, x + dy)) in
                 let v4 = sel (x + dx, y - dy)
-                             ((not . checkOpen) (x, y - dy) && checkOpen (x + dx, y)) in
+                             ((not . checkOpen) (x, y - dy) &&
+                                     checkOpen (x + dx, y) &&
+                                     checkOpen (x + dx, y - dy)) in
                 catMaybes [v0, v1, v2, v3, v4]
            else if vert
-           then let t0 = sel (x, y + dy) True in
-                let t1 = sel (x + 1, y + dy) $ (not . checkOpen) (x + 1, y) in
-                let t2 = sel (x - 1, y + dy) $ (not . checkOpen) (x - 1, y) in
-                catMaybes [t0, t1, t2]
-           else if horiz
-           then let u0 = sel (x + dx, y) True in
-                let u1 = sel (x + dx, y + 1) $ (not . checkOpen) (x, y + 1) in
-                let u2 = sel (x + dx, y - 1) $ (not . checkOpen) (x, y - 1) in
-                catMaybes [u0, u1, u2]
-           else []
+           then let s = checkOpen (x, y + dy) in
+                let t0 = sel (x, y + dy) s in
+                let t1 = sel (x + 1, y + dy) $ s && (not . checkOpen) (x + 1, y) in
+                let t2 = sel (x - 1, y + dy) $ s && (not . checkOpen) (x - 1, y) in
+                let t3 = sel (x + 1, y + dy) $ checkOpen (x + 1, y + dy) && (not . checkOpen) (x + 1, y) in
+                let t4 = sel (x - 1, y + dy) $ checkOpen (x - 1, y + dy) && (not . checkOpen) (x - 1, y) in
+                catMaybes [t0, t1, t2, t3, t4]
+           else let r = checkOpen (x + dx, y) in
+                let u0 = sel (x + dx, y) r in
+                let u1 = sel (x + dx, y + 1) $ r && (not . checkOpen) (x, y + 1) in
+                let u2 = sel (x + dx, y - 1) $ r && (not . checkOpen) (x, y - 1) in
+                let u3 = sel (x + dx, y + 1) $ checkOpen (x + dx, y + 1) && (not . checkOpen) (x, y + 1) in
+                let u4 = sel (x + dx, y - 1) $ checkOpen (x + dx, y - 1) && (not . checkOpen) (x, y - 1) in
+                catMaybes [u0, u1, u2, u3, u4]
+
 
 
 jump :: (Point -> Bool) -> Point -> Point -> Point -> Maybe Point
@@ -108,14 +116,12 @@ jump checkOpen goal pt@(x, y) (px, py) =
     let recJump = dx /= 0 && dy /= 0 &&
                   ((isJust .: jump checkOpen goal) (x + dx, y) (x, y) ||
                    (isJust .: jump checkOpen goal) (x, y + dy) (x, y)) in
-    let forward = checkOpen (x + dx, y) || checkOpen (x, y + dy) in
     if (not currentOpen) || dx == 0 && dy == 0
     then Nothing
     else if (atEnd || diagonal || horiz || vert || recJump)
     then jp
-    else if (forward)
-    then jump checkOpen goal (x + dx, y + dy) (x, y)
-    else Nothing
+    else jump checkOpen goal (x + dx, y + dy) (x, y)
+
 
 pathHelper :: (Metric Point, Open a, PathGraph (Array2d a) Point)
            => Array2d a
