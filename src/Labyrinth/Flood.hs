@@ -47,15 +47,19 @@ floodFill :: (PathGraph a b, Ord b)
 floodFill graph pt = floodHelper graph 0 $ mkFlood pt
 
 
-floodHelper :: (PathGraph a b, Ord b) => a -> Int -> Flood b -> Set.Set (FloodNode b)
+floodHelper :: (PathGraph a b, Ord b)
+            => a
+            -> Int
+            -> Flood b
+            -> Set.Set (FloodNode b)
 floodHelper     _     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
 floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
     floodHelper graph (depth + 1) (Flood full q)
     where q = (Seq.fromList ns) Seq.>< work
           full = Set.union pts (Set.fromList lst)
-          ns = filter (\x -> not (Set.member (FloodNode 0 x) pts)) $ fst <$> getNeighbors graph pt
           lst = zipWith ($) (FloodNode <$> (repeat depth)) ns
-
+          ns = filter notMember $ fst <$> getNeighbors graph pt
+          notMember x = Set.notMember (FloodNode 0 x) pts
 -- | Floods all given passable nodes on a given graph
 floodAll :: (PathGraph a b, Ord b)
          => a                       -- ^ the graph to be flooded
@@ -64,21 +68,18 @@ floodAll :: (PathGraph a b, Ord b)
 floodAll graph open = floodAllHelper graph open []
 
 
-hackdiff :: (Ord b) => Set.Set b -> Set.Set (FloodNode b) -> Set.Set b
-hackdiff r s = Set.difference r (Set.map getNode s)
-
 floodAllHelper :: (PathGraph a b, Ord b)
                => a
                -> Set.Set b
                -> [Set.Set (FloodNode b)]
                -> [Set.Set (FloodNode b)]
-floodAllHelper graph open sofar = do
+floodAllHelper graph open sofar =
     case Set.minView open of
         Just (x, _) -> let filled = floodFill graph x in
-                       let newOpen = hackdiff open filled in
+                       let newOpen = nodeDiff open filled in
                        floodAllHelper graph newOpen (filled:sofar)
         Nothing -> sofar
-
+    where nodeDiff r s = Set.difference r (Set.map getNode s)
 {- | Floods all regions of r graph reachable from the given open nodes
      Discards depth, leaving only the filled coordinates-}
 simpleFloodAll :: (PathGraph a b, Ord b)
@@ -86,4 +87,4 @@ simpleFloodAll :: (PathGraph a b, Ord b)
                -> Set.Set b   -- ^ the set of all open nodes
                -> [Set.Set b] -- ^ the resulting flooded regions
 simpleFloodAll graph open =
-    (Set.map getNode) <$> floodAll graph open
+    Set.map getNode <$> floodAll graph open

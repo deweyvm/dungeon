@@ -18,6 +18,7 @@ module Labyrinth.Data.Array2d(
     find,
     foldli,
     getOrElse,
+    inRange,
     (<$*>)
 ) where
 
@@ -53,10 +54,10 @@ unsafeGet (Array2d _ _ v) k = v Vec.! k
 
 --private
 get :: Array2d a -> Int -> Int -> Maybe a
-get arr@(Array2d cols rows _) i j =
+get arr i j =
     select (Just $ unsafeGet arr $ fromCoords arr (i, j))
            Nothing
-           (i < 0 || i > cols - 1 || j < 0 || j > rows - 1)
+           (not . inRange arr $ (i, j))
 
 -- | Get an element by coordinates or Nothing if the index is out of range
 geti :: Array2d a -> Point -> Maybe a
@@ -92,4 +93,7 @@ tabulate cols rows initial f =
     (\p _ -> f p) <$*>  base
     where base = Array2d cols rows $ Vec.replicate (cols*rows) initial
 
-
+-- | Returns true iff the coordinates are within the bounds of the array
+inRange :: Array2d a -> Point -> Bool
+inRange (Array2d cols rows _) (i, j) =
+    (i >= 0 && i <= cols - 1 && j >= 0 && j <= rows - 1)

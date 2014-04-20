@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns, InstanceSigs, BangPatterns, FlexibleInstances, TypeSynonymInstances,MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-import Prelude hiding (concat, all, and, foldr)
+import Prelude hiding (concat, all, and, foldr, any)
 import Codec.Picture
 import System.Random
 import Data.Word
@@ -9,6 +9,7 @@ import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Vector as Vec
 import Data.Maybe
+import Data.Foldable(any)
 import Control.Applicative
 import Control.Arrow((***))
 import Labyrinth.Util
@@ -24,21 +25,22 @@ import Debug.Trace
 instance Open Bool where
     isOpen = id
 
+mapSnd :: (a -> b) -> (c, a) -> (c, b)
+mapSnd f (x, y) = (x, f y)
 
 neighbors8 :: [Point]
-neighbors8 = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
-
+neighbors8 = ns
+    where ns = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
 -- | Retrieves the 8 neighbors of a 2d point
 getNeighbors8 :: Point -> [Point]
-getNeighbors8 (i, j) = map ((i +) *** (j +)) neighbors8
+getNeighbors8 (i, j) = ((i +) *** (j +)) <$> neighbors8
 -- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
 
 
 instance Open a => PathGraph (Array2d a) Point where
-    getNeighbors arr pt = (\p -> (p, euclid p pt)) <$> fst <$> filtered
-        where filtered = filter (isOpen . snd) ns
-              ns = catMaybes $ (geti (zipWithIndex arr)) <$> getNeighbors8 pt
-
+   getNeighbors arr pt = (\p -> (p, euclid p pt)) <$> ns
+       where ns = filter fine $ getNeighbors8 pt
+             fine pt = (any isOpen) (geti arr pt)
 instance Metric Point where
     guessLength = (/ 1.5) .: euclid
 
@@ -113,8 +115,8 @@ main = do
     --seed :: Int <- randomIO
     --let seed = -135580466 -- 50, 50
     let seed = 2028449052
-    let cols = 250
-    let rows = 250
+    let cols = 200
+    let rows = 200
     let initial = makeRandom seed cols rows
     let permuted = initial M.<.> [ M.occuCount 7
                                  , M.vertStrip True 4
@@ -123,13 +125,13 @@ main = do
     let open = getOpen permuted
     let flooded = largest $ zip (randColors seed) $ F.simpleFloodAll permuted open
 
-    printSet False (select "x" "0") cols rows (snd (flooded !! 0))
+    --printSet False (select "x" "0") cols rows (snd (flooded !! 0))
 
     let pathed = List.concat $ (addPath permuted) <$=> flooded
 
     return ()
 
-    --let arr = toPixelArray cols rows pathed
+    let arr = toPixelArray cols rows pathed
 
-    --saveMap "mask.png" $ (select white black) <$> permuted
-    --saveMap "flood.png" $ arr
+    saveMap "mask.png" $ (select white black) <$> permuted
+    saveMap "flood.png" $ arr
