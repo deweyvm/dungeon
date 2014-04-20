@@ -11,9 +11,9 @@ fi
 popd &> /dev/null
 echo "Building... "
 rm -f $EXE &&\
-cabal build  &&\
+cabal build &&\
 echo "Running labyrinth... " &&\
-time $EXE +RTS -N
+time $EXE +RTS -N -K100M
 if [[ $? -ne 0 ]] ; then
     echo "failed"
 fi

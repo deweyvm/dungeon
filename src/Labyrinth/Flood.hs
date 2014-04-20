@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns, BangPatterns #-}
 {-|
 Module      : Labyrinth.Flood
 Description : flood filling
@@ -17,7 +17,7 @@ import Control.Applicative
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import Labyrinth.PathGraph
-
+import Debug.Trace
 data FloodNode a = FloodNode Int a
 
 -- | Returns the distance a flooded node is from the origin node
@@ -53,13 +53,14 @@ floodHelper :: (PathGraph a b, Ord b)
             -> Flood b
             -> Set.Set (FloodNode b)
 floodHelper     _     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
-floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
+floodHelper graph depth (Flood !pts (Seq.viewl -> pt Seq.:< work)) =
     floodHelper graph (depth + 1) (Flood full q)
     where q = (Seq.fromList ns) Seq.>< work
           full = Set.union pts (Set.fromList lst)
           lst = zipWith ($) (FloodNode <$> (repeat depth)) ns
           ns = filter notMember $ fst <$> getNeighbors graph pt
           notMember x = Set.notMember (FloodNode 0 x) pts
+
 -- | Floods all given passable nodes on a given graph
 floodAll :: (PathGraph a b, Ord b)
          => a                       -- ^ the graph to be flooded
@@ -80,6 +81,7 @@ floodAllHelper graph open sofar =
                        floodAllHelper graph newOpen (filled:sofar)
         Nothing -> sofar
     where nodeDiff r s = Set.difference r (Set.map getNode s)
+
 {- | Floods all regions of r graph reachable from the given open nodes
      Discards depth, leaving only the filled coordinates-}
 simpleFloodAll :: (PathGraph a b, Ord b)
