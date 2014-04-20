@@ -94,25 +94,42 @@ addPath arr tup@(color, area) =
 getOpen :: Open a => Array2d a -> Set.Set Point
 getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> (if isOpen x then (pt:) else id) xs) [] arr
 
+printArray :: (a -> String) -> Array2d a -> IO ()
+printArray f arr =
+    let (Array2d _ _ vec) = (\(x, _) p -> select "" "\n" (x == 0)  ++ (f p)) <$*> arr in
+    sequence_ (putStr <$> (Vec.toList vec))
+
+printSet :: Bool -> (Bool -> String) -> Int -> Int -> Set.Set Point -> IO ()
+printSet x f cols rows set =
+    let arr = tabulate cols rows x (\pt -> Set.member pt set) in
+    printArray f arr
+
+largest :: [(Color, Set.Set Point)] -> [(Color, Set.Set Point)]
+largest s = let x = List.maximumBy (\(_, s0) (_, s1) -> Set.size s0 `compare` Set.size s1) s in
+            [x]
 
 main :: IO ()
 main = do
-    seed :: Int <- randomIO
+    --seed :: Int <- randomIO
     --let seed = -135580466 -- 50, 50
-    let seed = -1555715895
-    print seed
-    let cols = 20
-    let rows = 20
+    let seed = 2028449052
+    let cols = 250
+    let rows = 250
     let initial = makeRandom seed cols rows
-    let permuted = initial M.<.> [ M.negate
-                                 , M.occuCount 7
+    let permuted = initial M.<.> [ M.occuCount 7
                                  , M.vertStrip True 4
                                  , M.occuCount 5
                                  ]
     let open = getOpen permuted
-    let flooded = zip (randColors seed) $ F.simpleFloodAll permuted open
-    let pathed = List.concat $ (addPath permuted) <$=> flooded
-    let arr = toPixelArray cols rows pathed
+    let flooded = largest $ zip (randColors seed) $ F.simpleFloodAll permuted open
 
-    saveMap "mask.png" $ (select white black) <$> permuted
-    saveMap "flood.png" $ arr
+    printSet False (select "x" "0") cols rows (snd (flooded !! 0))
+
+    let pathed = List.concat $ (addPath permuted) <$=> flooded
+
+    return ()
+
+    --let arr = toPixelArray cols rows pathed
+
+    --saveMap "mask.png" $ (select white black) <$> permuted
+    --saveMap "flood.png" $ arr

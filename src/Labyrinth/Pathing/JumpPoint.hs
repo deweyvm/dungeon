@@ -25,7 +25,6 @@ import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.Pathing.Util
 
-
 data Path a = Path (Set.Set a)       -- closed set
                    (Map.Map a Float) -- g score
                    (Q.PSQ a Float)   -- open set, f score
@@ -56,7 +55,6 @@ findNeighbors checkOpen graph n@(x, y) parents =
            let dy = dir (y - py) in
            let diag = (dx /= 0 && dy /= 0) in
            let vert = (dx == 0) in
-           let horiz = True in
            let sel = select Nothing . Just in
            if diag
            then let v0 = sel (x, y + dy)
@@ -65,14 +63,14 @@ findNeighbors checkOpen graph n@(x, y) parents =
                              (checkOpen (x + dx, y)) in
                 let v2 = sel (x + dx, y + dy)
                              (checkOpen (x + dx, y + dy)) in
-                let v3 = sel (x - dx, y + dy)
-                             ((not . checkOpen) (x - dx, y) &&
-                                     checkOpen (x, y + dy) &&
-                                     checkOpen (x - dx, x + dy)) in
-                let v4 = sel (x + dx, y - dy)
-                             ((not . checkOpen) (x, y - dy) &&
-                                     checkOpen (x + dx, y) &&
-                                     checkOpen (x + dx, y - dy)) in
+                let v3 = sel (x - dx, y + dy) True in
+                          --   ((not . checkOpen) (x - dx, y) &&
+                          --           checkOpen (x, y + dy) &&
+                          --           checkOpen (x - dx, x + dy)) in
+                let v4 = sel (x + dx, y - dy) True in
+                          --   ((not . checkOpen) (x, y - dy) &&
+                          --           checkOpen (x + dx, y) &&
+                          --           checkOpen (x + dx, y - dy)) in
                 catMaybes [v0, v1, v2, v3, v4]
            else if vert
            then let s = checkOpen (x, y + dy) in
@@ -116,7 +114,7 @@ jump checkOpen goal pt@(x, y) (px, py) =
     let recJump = dx /= 0 && dy /= 0 &&
                   ((isJust .: jump checkOpen goal) (x + dx, y) (x, y) ||
                    (isJust .: jump checkOpen goal) (x, y + dy) (x, y)) in
-    if (not currentOpen) || dx == 0 && dy == 0
+    if (not currentOpen)
     then Nothing
     else if (atEnd || diagonal || horiz || vert || recJump)
     then jp
@@ -130,7 +128,7 @@ pathHelper :: (Metric Point, Open a, PathGraph (Array2d a) Point)
 pathHelper graph (Path closedSet gs fsop path goal) =
     case Q.minView fsop of
         Just (current, newOpen) -> processCurrent (Q.key current) newOpen
-        Nothing -> Left "Found no path"
+        Nothing -> Left $ "Found no path to " ++ show goal
     where processCurrent currentNode open =
               let checkOpen pt = any isOpen $ geti graph pt in
               let newClosed = Set.insert currentNode closedSet in
