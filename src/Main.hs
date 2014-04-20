@@ -90,6 +90,7 @@ addPath arr tup@(color, area) =
             case J.pfind arr x y of
                 Right pts -> [(color, rest Set.\\ set), (white, set)]
                    where set = Set.fromList pts
+                -- this case should be impossible if pfind is correct
                 Left s -> trace ("Failed to find path: " ++ s) [tup]
         Nothing -> [tup]
 
@@ -107,8 +108,8 @@ printSet x f cols rows set =
     printArray f arr
 
 largest :: [(Color, Set.Set Point)] -> [(Color, Set.Set Point)]
-largest s = let x = List.maximumBy (\(_, s0) (_, s1) -> Set.size s0 `compare` Set.size s1) s in
-            [x]
+largest s = (:[]) $ List.maximumBy setSize s
+    where setSize (_, s0) (_, s1) =  Set.size s0 `compare` Set.size s1
 
 main :: IO ()
 main = do
