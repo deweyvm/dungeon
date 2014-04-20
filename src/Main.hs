@@ -99,7 +99,7 @@ getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> (if isOpen x then (pt:) else
 
 printArray :: (a -> String) -> Array2d a -> IO ()
 printArray f arr =
-    let (Array2d _ _ vec) = (\(x, _) p -> select "" "\n" (x == 0)  ++ (f p)) <$*> arr in
+    let (Array2d _ _ vec) = (\(x, y) p -> select "" "\n" (x == 0 && y /= 0)  ++ (f p)) <$*> arr in
     sequence_ (putStr <$> (Vec.toList vec))
 
 printSet :: Bool -> (Bool -> String) -> Int -> Int -> Set.Set Point -> IO ()
@@ -110,6 +110,18 @@ printSet x f cols rows set =
 largest :: [(Color, Set.Set Point)] -> [(Color, Set.Set Point)]
 largest s = (:[]) $ List.maximumBy setSize s
     where setSize (_, s0) (_, s1) =  Set.size s0 `compare` Set.size s1
+
+printPoint :: Point -> IO ()
+printPoint (i, j) = putStrLn (show i ++ "," ++ show j)
+
+printCase :: Set.Set Point -> Int -> Int -> (Bool -> String) -> IO ()
+printCase set rows cols f = do
+    case minMaxView set of
+        Just (x, y, _) -> do
+            printPoint x
+            printPoint y
+            printSet False f rows cols set
+        Nothing -> return ()
 
 main :: IO ()
 main = do
@@ -126,11 +138,9 @@ main = do
     let open = getOpen permuted
     let flooded = largest $ zip (randColors seed) $ F.simpleFloodAll permuted open
 
-    --printSet False (select "x" "0") cols rows (snd (flooded !! 0))
+    printCase (snd (flooded !! 0)) cols rows (select "x" "0")
 
     let pathed = List.concat $ (addPath permuted) <$=> flooded
-
-    return ()
 
     let arr = toPixelArray cols rows pathed
 
