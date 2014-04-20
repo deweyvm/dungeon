@@ -8,14 +8,15 @@ import Data.Word
 import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Vector as Vec
-import Data.Maybe
 import Data.Foldable(any)
 import Control.Applicative
+import Control.Monad
 import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.PathGraph
 import Labyrinth.Pathing.Util
+import Labyrinth.Generator
 import qualified Labyrinth.Pathing.JumpPoint as J
 import qualified Labyrinth.Pathing.AStar as A
 import qualified Labyrinth.Machine2d as M
@@ -25,12 +26,10 @@ import Debug.Trace
 instance Open Bool where
     isOpen = id
 
-mapSnd :: (a -> b) -> (c, a) -> (c, b)
-mapSnd f (x, y) = (x, f y)
-
 neighbors8 :: [Point]
 neighbors8 = ns
     where ns = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
+
 -- | Retrieves the 8 neighbors of a 2d point
 getNeighbors8 :: Point -> [Point]
 getNeighbors8 (i, j) = ((i +) *** (j +)) <$> neighbors8
@@ -38,9 +37,10 @@ getNeighbors8 (i, j) = ((i +) *** (j +)) <$> neighbors8
 
 
 instance Open a => PathGraph (Array2d a) Point where
-   getNeighbors arr pt = (\p -> (p, euclid p pt)) <$> ns
-       where ns = filter fine $ getNeighbors8 pt
-             fine pt = (any isOpen) (geti arr pt)
+   getNeighbors arr pt = ap (,) (euclid pt) <$> ns
+       where ns = filter open $ getNeighbors8 pt
+             open = (any isOpen) . (geti arr)
+
 instance Metric Point where
     guessLength = (/ 1.5) .: euclid
 
@@ -74,15 +74,6 @@ toPixelArray cols rows pts =
     where found :: Point -> Maybe Color
           found pt = fst <$> List.find (\(_, set) -> Set.member pt set) pts
 
--- | Retrieves the minimal and maximal elements of the set along with the
--- set stripped of those elements or Nothing if not enough members exist
--- in the given set
-minMaxView :: Set.Set a -> Maybe (a, a, Set.Set a)
-minMaxView set = do
-    (x, rest) <- Set.maxView set
-    (y, rest2) <- Set.minView rest
-    return (x, y, rest2)
-
 addPath :: Array2d Bool -> (Color, Set.Set Point) -> [(Color, Set.Set Point)]
 addPath arr tup@(color, area) =
     case minMaxView area of
@@ -97,39 +88,20 @@ addPath arr tup@(color, area) =
 getOpen :: Open a => Array2d a -> Set.Set Point
 getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> (if isOpen x then (pt:) else id) xs) [] arr
 
-printArray :: (a -> String) -> Array2d a -> IO ()
-printArray f arr =
-    let (Array2d _ _ vec) = (\(x, y) p -> select "" "\n" (x == 0 && y /= 0)  ++ (f p)) <$*> arr in
-    sequence_ (putStr <$> (Vec.toList vec))
-
-printSet :: Bool -> (Bool -> String) -> Int -> Int -> Set.Set Point -> IO ()
-printSet x f cols rows set =
-    let arr = tabulate cols rows x (\pt -> Set.member pt set) in
-    printArray f arr
 
 largest :: [(Color, Set.Set Point)] -> [(Color, Set.Set Point)]
 largest s = (:[]) $ List.maximumBy setSize s
     where setSize (_, s0) (_, s1) =  Set.size s0 `compare` Set.size s1
 
-printPoint :: Point -> IO ()
-printPoint (i, j) = putStrLn (show i ++ "," ++ show j)
 
-printCase :: Set.Set Point -> Int -> Int -> (Bool -> String) -> IO ()
-printCase set rows cols f = do
-    case minMaxView set of
-        Just (x, y, _) -> do
-            printPoint x
-            printPoint y
-            printSet False f rows cols set
-        Nothing -> return ()
 
 main :: IO ()
 main = do
     --seed :: Int <- randomIO
     --let seed = -135580466 -- 50, 50
     let seed = 2028449052
-    let cols = 500
-    let rows = 500
+    let cols = 100
+    let rows = 100
     let initial = makeRandom seed cols rows
     let permuted = initial M.<.> [ M.occuCount 5
                                  , M.vertStrip True 4
@@ -138,7 +110,7 @@ main = do
     let open = getOpen permuted
     let flooded = largest $ zip (randColors seed) $ F.simpleFloodAll permuted open
 
-    printCase (snd (flooded !! 0)) cols rows (select "x" "0")
+    putStrLn $ printCase (snd (flooded !! 0)) cols rows (select "x" "0")
 
     let pathed = List.concat $ (addPath permuted) <$=> flooded
 

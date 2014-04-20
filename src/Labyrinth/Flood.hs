@@ -17,7 +17,6 @@ import Control.Applicative
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import Labyrinth.PathGraph
-import Debug.Trace
 data FloodNode a = FloodNode Int a
 
 -- | Returns the distance a flooded node is from the origin node
@@ -53,7 +52,7 @@ floodHelper :: (PathGraph a b, Ord b)
             -> Flood b
             -> Set.Set (FloodNode b)
 floodHelper     _     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
-floodHelper graph depth (Flood !pts (Seq.viewl -> pt Seq.:< work)) =
+floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
     floodHelper graph (depth + 1) (Flood full q)
     where q = (Seq.fromList ns) Seq.>< work
           full = Set.union pts (Set.fromList lst)

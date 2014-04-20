@@ -14,6 +14,7 @@ module Labyrinth.Util where
 
 import Debug.Trace
 import Data.Function
+import qualified Data.Set as Set
 import Control.Parallel.Strategies
 
 -- | Alias for a pair of integers
@@ -49,3 +50,12 @@ select f t p = if p then t else f
 -- | Parallel fmap
 (<$=>) :: (NFData b) => (a -> b) -> [a] -> [b]
 f <$=> ls = (parMap rdeepseq) f ls
+
+-- | Retrieves the minimal and maximal elements of the set along with the
+-- set stripped of those elements or Nothing if not enough members exist
+-- in the given set
+minMaxView :: Set.Set a -> Maybe (a, a, Set.Set a)
+minMaxView set = do
+    (x, rest) <- Set.maxView set
+    (y, rest2) <- Set.minView rest
+    return (x, y, rest2)
