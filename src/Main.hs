@@ -87,7 +87,7 @@ addPath :: Array2d Bool -> (Color, Set.Set Point) -> [(Color, Set.Set Point)]
 addPath arr tup@(color, area) =
     case minMaxView area of
         Just (x, y, rest) ->
-            case A.pfind arr x y of
+            case J.pfind arr x y of
                 Right pts -> [(color, rest Set.\\ set), (white, set)]
                    where set = Set.fromList pts
                 -- this case should be impossible if pfind is correct
@@ -119,7 +119,7 @@ main = do
     let cols = 500
     let rows = 500
     let initial = makeRandom seed cols rows
-    let permuted = initial M.<.> [ M.occuCount 7
+    let permuted = initial M.<.> [ M.occuCount 5
                                  , M.vertStrip True 4
                                  , M.occuCount 5
                                  ]

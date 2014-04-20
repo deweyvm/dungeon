@@ -50,9 +50,8 @@ findNeighbors checkOpen graph n@(x, y) parents =
       Nothing -> fst <$> getNeighbors graph n
     where gatherParent :: Point -> [Point]
           gatherParent (px, py) =
-           let dir i = i `quot` (max (abs i) 1) in
-           let dx = dir (x - px) in
-           let dy = dir (y - py) in
+           let dx = signum (x - px) in
+           let dy = signum (y - py) in
            let diag = (dx /= 0 && dy /= 0) in
            let vert = (dx == 0) in
            let sel = select Nothing . Just in
