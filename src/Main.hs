@@ -1,48 +1,26 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns, InstanceSigs, BangPatterns, FlexibleInstances, TypeSynonymInstances,MultiParamTypeClasses #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
-import Prelude hiding (concat, all, and, foldr, any)
+
+import Prelude hiding (concat, all, and, foldr)
 import Codec.Picture
 import System.Random
 import Data.Word
 import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Vector as Vec
-import Data.Foldable(any)
+import Data.Maybe
 import Control.Applicative
-import Control.Monad
-import Control.Arrow((***))
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.PathGraph
-import Labyrinth.Pathing.Util
 import Labyrinth.Generator
 import qualified Labyrinth.Pathing.JumpPoint as J
 import qualified Labyrinth.Pathing.AStar as A
 import qualified Labyrinth.Machine2d as M
 import qualified Labyrinth.Flood as F
+import Labyrinth.Instances()
 import Debug.Trace
 
-instance Open Bool where
-    isOpen = id
-
-neighbors8 :: [Point]
-neighbors8 = ns
-    where ns = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
-
--- | Retrieves the 8 neighbors of a 2d point
-getNeighbors8 :: Point -> [Point]
-getNeighbors8 (i, j) = ((i +) *** (j +)) <$> neighbors8
--- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
-
-
-instance Open a => PathGraph (Array2d a) Point where
-   getNeighbors arr pt = ap (,) (euclid pt) <$> ns
-       where ns = filter open $ getNeighbors8 pt
-             open = (any isOpen) . (geti arr)
-
-instance Metric Point where
-    guessLength = (/ 1.5) .: euclid
 
 
 type Color = (Word8, Word8, Word8)
@@ -68,32 +46,47 @@ saveMap path arr@(Array2d cols rows _) =
     writePng path $ generateImage (getOrElse colors (PixelRGBA8 0 0 0 255)) cols rows
     where colors = (\(r, g, b) -> PixelRGBA8 r g b 255) <$> arr
 
-toPixelArray :: Int -> Int -> [(Color, Set.Set Point)] -> Array2d Color
-toPixelArray cols rows pts =
-    tabulate cols rows black (maybe black id . found)
-    where found :: Point -> Maybe Color
-          found pt = fst <$> List.find (\(_, set) -> Set.member pt set) pts
+data PathRegion a = PathRegion a           -- start node
+                               a           -- end node
+                               (Set.Set a) -- nodes not covered by path
+                               [a]         -- path
 
-addPath :: Array2d Bool -> (Color, Set.Set Point) -> [(Color, Set.Set Point)]
-addPath arr tup@(color, area) =
+prContains :: Point -> PathRegion Point -> Bool
+prContains pt (PathRegion start end open path) =
+    pt == start || pt == end || Set.member pt open || elem pt path
+
+toPixelArray :: Int -> Int -> Int -> [PathRegion Point] -> Array2d Color
+toPixelArray seed cols rows regions =
+    tabulate cols rows black (\pt -> maybe black id (found pt <$> findReg pt))--getOrElse cc black in undefined)
+    where colors = zip (randColors seed) regions
+          findReg pt = List.find (\(color, reg) -> prContains pt reg) colors
+          found :: Point -> (Color, PathRegion Point) -> Color
+          found pt (color, (PathRegion start end rest path))
+              | start == pt = (0, 255, 0)
+              | end == pt = (255, 0, 0)
+              | Set.member pt rest = color
+              | elem pt path = white
+
+createPath :: Array2d Bool -> Set.Set Point -> Maybe (Point, Point, Set.Set Point, [Point])
+createPath arr area =
     case minMaxView area of
         Just (x, y, rest) ->
             case J.pfind arr x y of
-                Right pts -> [(color, rest Set.\\ set), (white, set)]
-                   where set = Set.fromList pts
+                Right pts ->
+                     Just (x, y, Set.difference rest (Set.union (Set.fromList [x, y]) (Set.fromList pts)), pts)
                 -- this case should be impossible if pfind is correct
-                Left s -> trace ("Failed to find path: " ++ s) [tup]
-        Nothing -> [tup]
-
+                Left s -> trace ("Failed to find path: " ++ s) Nothing
+        Nothing -> Nothing
 getOpen :: Open a => Array2d a -> Set.Set Point
 getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> (if isOpen x then (pt:) else id) xs) [] arr
 
 
-largest :: [(Color, Set.Set Point)] -> [(Color, Set.Set Point)]
-largest s = (:[]) $ List.maximumBy setSize s
-    where setSize (_, s0) (_, s1) =  Set.size s0 `compare` Set.size s1
+largest :: [Set.Set Point] -> Set.Set Point
+largest s = List.maximumBy setSize s
+    where setSize s0 s1 =  Set.size s0 `compare` Set.size s1
 
-
+mkPathRegion :: (a, a, Set.Set a, [a]) -> PathRegion a
+mkPathRegion (start, end, open, path) = PathRegion start end open path
 
 main :: IO ()
 main = do
@@ -108,13 +101,13 @@ main = do
                                  , M.occuCount 5
                                  ]
     let open = getOpen permuted
-    let flooded = largest $ zip (randColors seed) $ F.simpleFloodAll permuted open
+    let flooded = ((:[]) . largest) $ F.simpleFloodAll permuted open
 
-    putStrLn $ printCase (snd (flooded !! 0)) cols rows (select "x" "0")
+    putStrLn $ printCase ((flooded !! 0)) cols rows (select "x" "0")
 
-    let pathed = List.concat $ (addPath permuted) <$=> flooded
-
-    let arr = toPixelArray cols rows pathed
+    let paths = catMaybes $ (createPath permuted) <$=> flooded
+    let pathRegions = mkPathRegion <$> paths
+    let arr = toPixelArray seed cols rows pathRegions
 
     saveMap "mask.png" $ (select white black) <$> permuted
     saveMap "flood.png" $ arr

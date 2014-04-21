@@ -60,7 +60,7 @@ floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
           ns = filter notMember $ fst <$> getNeighbors graph pt
           notMember x = Set.notMember (FloodNode 0 x) pts
 
--- | Floods all given passable nodes on a given graph
+-- | Floods all given passable regions on a given graph.
 floodAll :: (PathGraph a b, Ord b)
          => a                       -- ^ the graph to be flooded
          -> Set.Set b               -- ^ the set of all open nodes
@@ -89,3 +89,10 @@ simpleFloodAll :: (PathGraph a b, Ord b)
                -> [Set.Set b] -- ^ the resulting flooded regions
 simpleFloodAll graph open =
     Set.map getNode <$> floodAll graph open
+
+
+-- | Get a pair of points whose distance is maximum. Returns nothing if
+--getMaxDistance :: (PathGraph a b, Ord b)
+--               => a
+--               -> Set.Set b
+--               -> Maybe (b, b)
