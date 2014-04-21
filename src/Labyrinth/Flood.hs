@@ -10,10 +10,18 @@ Portability : unknown
 
 Implementation of flood fill for arbitrary graphs.
 -}
-module Labyrinth.Flood(floodFill, floodAll, simpleFloodAll, getDepth, getNode) where
+module Labyrinth.Flood(
+    floodFill,
+    floodAll,
+    simpleFloodAll,
+    getDepth,
+    getNode,
+    getMaxDistance
+) where
 
 import Control.Monad
 import Control.Applicative
+import Data.Foldable(maximumBy)
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import Labyrinth.PathGraph
@@ -92,7 +100,16 @@ simpleFloodAll graph open =
 
 
 -- | Get a pair of points whose distance is maximum. Returns nothing if
---getMaxDistance :: (PathGraph a b, Ord b)
---               => a
---               -> Set.Set b
---               -> Maybe (b, b)
+getMaxDistance :: (PathGraph a b, Ord b)
+               => a
+               -> Set.Set b
+               -> Maybe (b, b, Int)
+getMaxDistance graph open =
+    case Set.minView open of
+        Just (seed, _) -> let flooded1 = floodFill graph seed in
+                          let p = getNode $ maximumBy compareDepth flooded1 in
+                          let flooded2 = floodFill graph p in
+                          let qFlood = maximumBy compareDepth flooded2 in
+                          Just (p, getNode qFlood, getDepth qFlood)
+        Nothing -> Nothing
+    where compareDepth (FloodNode i _) (FloodNode j _) = i `compare` j
