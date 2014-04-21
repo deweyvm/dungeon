@@ -132,25 +132,24 @@ savePathed = saveMap "flood.png"
 
 
 doSimple :: IO ()
-doSimple = createTest saveMask (\_ -> return ()) savePathed (Params 0 200 200 transform)
+doSimple = createTest saveMask savePathed (Params 0 200 200 transform)
     where transform = (M.<.> [ M.occuCount 5
-                              , M.vertStrip True 4
-                              , M.occuCount 5
-                              ])
+                             , M.vertStrip True 4
+                             , M.occuCount 5
+                             ])
 
 createTest :: (Array2d Bool -> IO ())
-           -> (Array2d Bool -> IO ())
            -> (Array2d Color -> IO ())
            -> Params (Array2d Bool)
            -> IO ()
-createTest processMask processFilled processPathed (Params seed rows cols endo) = do
+createTest processMask processPathed (Params seed rows cols endo) = do
     let initial = makeRandom seed cols rows
     let permuted = endo initial
     let open = getOpen permuted
-    let flooded = ((:[]) . largest) $ F.simpleFloodAll permuted open
-    let paths = catMaybes $ (createPath permuted) <$=> flooded
+    let flooded = F.simpleFloodAll permuted open
+    let biggest = ((:[]) . largest) flooded
+    let paths = catMaybes $ (createPath permuted) <$=> biggest
     let pathRegions = mkPathRegion <$> paths
     let arr = toPixelArray seed cols rows pathRegions
-    return ()
-    saveMap "mask.png" $ (select white black) <$> permuted
-    processPathed $ arr
+    processMask permuted
+    processPathed arr
