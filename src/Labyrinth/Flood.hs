@@ -19,12 +19,12 @@ module Labyrinth.Flood(
     getMaxDistance
 ) where
 
-import Control.Monad
 import Control.Applicative
 import Data.Foldable(maximumBy)
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import Labyrinth.PathGraph
+
 data FloodNode a = FloodNode Int a
 
 -- | Returns the distance a flooded node is from the origin node
@@ -35,36 +35,36 @@ getDepth (FloodNode i _) = i
 getNode :: FloodNode a -> a
 getNode (FloodNode _ x) = x
 
-data Flood a = Flood (Set.Set (FloodNode a)) (Seq.Seq a)
-
 instance Eq a => Eq (FloodNode a) where
     (FloodNode _ x) == (FloodNode _ y) = x == y
 
 instance Ord a => Ord (FloodNode a) where
     compare (FloodNode _ x) (FloodNode _ y) = compare x y
 
-mkFlood :: a -> Flood a
-mkFlood = liftM2 Flood (Set.singleton . (FloodNode 0)) Seq.singleton
+data Flood a = Flood (Set.Set (FloodNode a)) (Seq.Seq (FloodNode a))
 
+
+mkFlood :: a -> Flood a
+mkFlood x = Flood ((Set.singleton . mkNode) x) ((Seq.singleton . mkNode) x)
+    where mkNode = FloodNode 0
 -- | Floods a graph starting from the given node
 floodFill :: (PathGraph a b, Ord b)
           => a                     -- ^ the graph to be flooded
           -> b                     -- ^ the seed point
           -> Set.Set (FloodNode b) -- ^ the set of flooded nodes
-floodFill graph pt = floodHelper graph 0 $ mkFlood pt
+floodFill graph pt = floodHelper graph $ mkFlood pt
 
 
 floodHelper :: (PathGraph a b, Ord b)
             => a
-            -> Int
             -> Flood b
             -> Set.Set (FloodNode b)
-floodHelper     _     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
-floodHelper graph depth (Flood pts (Seq.viewl -> pt Seq.:< work)) =
-    floodHelper graph (depth + 1) (Flood full q)
-    where q = (Seq.fromList ns) Seq.>< work
+floodHelper     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
+floodHelper graph (Flood pts (Seq.viewl -> (FloodNode depth pt) Seq.:< work)) =
+    floodHelper graph (Flood full q)
+    where q = (Seq.fromList lst) Seq.>< work
           full = Set.union pts (Set.fromList lst)
-          lst = zipWith ($) (FloodNode <$> (repeat depth)) ns
+          lst = zipWith ($) (FloodNode <$> (repeat (depth + 1))) ns
           ns = filter notMember $ fst <$> getNeighbors graph pt
           notMember x = Set.notMember (FloodNode 0 x) pts
 
@@ -99,7 +99,7 @@ simpleFloodAll graph open =
     Set.map getNode <$> floodAll graph open
 
 
--- | Get a pair of points whose distance is maximum. Returns nothing if
+-- | Get a pair of points whose distance is maximum. Returns nothing if the set is empty.
 getMaxDistance :: (PathGraph a b, Ord b)
                => a
                -> Set.Set b
@@ -107,9 +107,9 @@ getMaxDistance :: (PathGraph a b, Ord b)
 getMaxDistance graph open =
     case Set.minView open of
         Just (seed, _) -> let flooded1 = floodFill graph seed in
-                          let p = getNode $ maximumBy compareDepth flooded1 in
-                          let flooded2 = floodFill graph p in
+                          let pFlood = maximumBy compareDepth flooded1 in
+                          let flooded2 = floodFill graph $ getNode pFlood in
                           let qFlood = maximumBy compareDepth flooded2 in
-                          Just (p, getNode qFlood, getDepth qFlood)
+                          Just (getNode pFlood, getNode qFlood, getDepth pFlood)
         Nothing -> Nothing
     where compareDepth (FloodNode i _) (FloodNode j _) = i `compare` j

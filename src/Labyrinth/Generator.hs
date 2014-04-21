@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts #-}
 {-|
 Module      : Labyrinth.Generator
 Description : pathfinding testcase generator
@@ -22,8 +22,6 @@ import Control.Applicative
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
 import Labyrinth.PathGraph
-import qualified Labyrinth.Pathing.JumpPoint as J
---import qualified Labyrinth.Pathing.AStar as A
 import qualified Labyrinth.Machine2d as M
 import qualified Labyrinth.Flood as F
 import Labyrinth.Instances()
@@ -100,11 +98,16 @@ toPixelArray seed cols rows regions =
               | Set.member pt rest = color
               | elem pt path = white
 
-createPath :: Array2d Bool -> Set.Set Point -> Maybe (Point, Point, Set.Set Point, [Point])
-createPath arr area =
-    case minMaxView area of
-        Just (x, y, rest) ->
-            case J.pfind arr x y of
+createPath :: (Ord Point, Metric Point, PathGraph (Array2d Bool) Point)
+           => (Array2d Bool -> Point -> Point -> Either String [Point])
+           -> Array2d Bool
+           -> Set.Set Point
+           -> Maybe (Point, Point, Set.Set Point, [Point])
+createPath pfind arr area =
+    case F.getMaxDistance arr area of
+        Just (x, y, d) ->
+            let rest = trace ("DEPTH: " ++ show d) $ Set.difference area (Set.fromList [x, y]) in
+            case pfind arr x y of
                 Right pts ->
                      Just (x, y, removed, pts)
                      where removed = Set.difference rest (Set.union (Set.fromList [x, y])
@@ -124,32 +127,46 @@ largest s = List.maximumBy setSize s
 data Params a = Params Int Int Int (a -> a)
 
 
-saveMask :: Array2d Bool -> IO ()
-saveMask arr = saveMap "mask.png" $ (select white black) <$> arr
+saveMask :: Params a -> Array2d Bool -> IO ()
+saveMask _ arr = saveMap "mask.png" $ (select white black) <$> arr
 
-savePathed :: Array2d Color -> IO ()
-savePathed = saveMap "flood.png"
+saveFlooded :: Params a -> [Set.Set Point] -> IO ()
+saveFlooded (Params _ cols rows _) (x:_) = do
+    let _ = printCase x cols rows (select "x" "0")
+    return ()
+
+saveFlooded _ _ = return ()
+
+savePathed :: Params a -> Array2d Color -> IO ()
+savePathed _ = saveMap "flood.png"
 
 
-doSimple :: IO ()
-doSimple = createTest saveMask savePathed (Params 0 200 200 transform)
-    where transform = (M.<.> [ M.occuCount 5
+doSimple :: (Ord Point, Metric Point, PathGraph (Array2d Bool) Point)
+         => (Array2d Bool -> Point -> Point -> Either String [Point])
+         -> Int
+         -> IO ()
+doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params seed 20 20 transform)
+    where transform = (M.<.> [ M.occuCount 7
                              , M.vertStrip True 4
                              , M.occuCount 5
                              ])
 
-createTest :: (Array2d Bool -> IO ())
-           -> (Array2d Color -> IO ())
-           -> Params (Array2d Bool)
-           -> IO ()
-createTest processMask processPathed (Params seed rows cols endo) = do
+processMaze :: (Ord Point, Metric Point, PathGraph (Array2d Bool) Point)
+            => (Array2d Bool -> Point -> Point -> Either String [Point])
+            -> (Params (Array2d Bool) -> Array2d Bool -> IO ())
+            -> (Params (Array2d Bool) -> [Set.Set Point] -> IO ())
+            -> (Params (Array2d Bool) -> Array2d Color -> IO ())
+            -> Params (Array2d Bool)
+            -> IO ()
+processMaze pfind processMask processFlooded processPathed p@(Params seed rows cols endo) = do
     let initial = makeRandom seed cols rows
     let permuted = endo initial
     let open = getOpen permuted
     let flooded = F.simpleFloodAll permuted open
     let biggest = ((:[]) . largest) flooded
-    let paths = catMaybes $ (createPath permuted) <$=> biggest
+    let paths = catMaybes $ (createPath pfind permuted) <$=> biggest
     let pathRegions = mkPathRegion <$> paths
     let arr = toPixelArray seed cols rows pathRegions
-    processMask permuted
-    processPathed arr
+    processMask p permuted
+    processFlooded p biggest
+    processPathed p arr
