@@ -21,7 +21,7 @@ import Data.Maybe
 import Control.Applicative
 import Labyrinth.Util
 import Labyrinth.Data.Array2d
-import Labyrinth.PathGraph
+import Labyrinth.Graph
 import qualified Labyrinth.Machine2d as M
 import qualified Labyrinth.Flood as F
 import Labyrinth.Instances()
@@ -98,7 +98,7 @@ toPixelArray seed cols rows regions =
               | Set.member pt rest = color
               | elem pt path = white
 
-createPath :: (Ord Point, Metric Point, PathGraph (Array2d Bool) Point)
+createPath :: (Ord Point, Metric Point, Graph (Array2d Bool) Point)
            => (Array2d Bool -> Point -> Point -> Either String [Point])
            -> Array2d Bool
            -> Set.Set Point
@@ -141,7 +141,7 @@ savePathed :: Params a -> Array2d Color -> IO ()
 savePathed _ = saveMap "flood.png"
 
 
-doSimple :: (Ord Point, Metric Point, PathGraph (Array2d Bool) Point)
+doSimple :: (Ord Point, Metric Point, Graph (Array2d Bool) Point)
          => (Array2d Bool -> Point -> Point -> Either String [Point])
          -> Int
          -> IO ()
@@ -151,7 +151,7 @@ doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params 
                              , M.occuCount 5
                              ])
 
-processMaze :: (Ord Point, Metric Point, PathGraph (Array2d Bool) Point)
+processMaze :: (Ord Point, Metric Point, Graph (Array2d Bool) Point)
             => (Array2d Bool -> Point -> Point -> Either String [Point])
             -> (Params (Array2d Bool) -> Array2d Bool -> IO ())
             -> (Params (Array2d Bool) -> [Set.Set Point] -> IO ())

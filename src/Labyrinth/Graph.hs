@@ -11,10 +11,10 @@ Portability : unknown
 A graph and associated typeclasses for doing flood fills, pathfinding, etc
 independent of data structure.
 -}
-module Labyrinth.PathGraph(PathGraph(..), Metric(..), Open(..)) where
+module Labyrinth.Graph(Graph(..), Metric(..), Open(..)) where
 
 -- | A graph with underlying type a and coordinate type b
-class PathGraph a b where
+class Graph a b where
     getNeighbors :: a            -- ^ the underlying collection
                  -> b            {- ^ the coordinate from which to
                                       get neighboring nodes -}

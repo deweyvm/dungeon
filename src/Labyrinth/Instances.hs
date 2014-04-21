@@ -21,7 +21,7 @@ import Control.Monad
 import Data.Foldable(any)
 import Labyrinth.Data.Array2d
 import Labyrinth.Pathing.Util
-import Labyrinth.PathGraph
+import Labyrinth.Graph
 import Labyrinth.Util
 
 instance Open Bool where
@@ -37,7 +37,7 @@ getNeighbors8 (i, j) = ((i +) *** (j +)) <$> neighbors8
 -- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
 
 
-instance Open a => PathGraph (Array2d a) Point where
+instance Open a => Graph (Array2d a) Point where
    getNeighbors arr pt = ap (,) (euclid pt) <$> ns
        where ns = filter open $ getNeighbors8 pt
              open = (any isOpen) . (geti arr)

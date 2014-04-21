@@ -23,7 +23,7 @@ import Control.Applicative
 import Data.Foldable(maximumBy)
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
-import Labyrinth.PathGraph
+import Labyrinth.Graph
 
 data FloodNode a = FloodNode Int a
 
@@ -48,14 +48,14 @@ mkFlood :: a -> Flood a
 mkFlood x = Flood ((Set.singleton . mkNode) x) ((Seq.singleton . mkNode) x)
     where mkNode = FloodNode 0
 -- | Floods a graph starting from the given node
-floodFill :: (PathGraph a b, Ord b)
+floodFill :: (Graph a b, Ord b)
           => a                     -- ^ the graph to be flooded
           -> b                     -- ^ the seed point
           -> Set.Set (FloodNode b) -- ^ the set of flooded nodes
 floodFill graph pt = floodHelper graph $ mkFlood pt
 
 
-floodHelper :: (PathGraph a b, Ord b)
+floodHelper :: (Graph a b, Ord b)
             => a
             -> Flood b
             -> Set.Set (FloodNode b)
@@ -69,14 +69,14 @@ floodHelper graph (Flood pts (Seq.viewl -> (FloodNode depth pt) Seq.:< work)) =
           notMember x = Set.notMember (FloodNode 0 x) pts
 
 -- | Floods all given passable regions on a given graph.
-floodAll :: (PathGraph a b, Ord b)
+floodAll :: (Graph a b, Ord b)
          => a                       -- ^ the graph to be flooded
          -> Set.Set b               -- ^ the set of all open nodes
          -> [Set.Set (FloodNode b)] -- ^ the resulting flooded regions
 floodAll graph open = floodAllHelper graph open []
 
 
-floodAllHelper :: (PathGraph a b, Ord b)
+floodAllHelper :: (Graph a b, Ord b)
                => a
                -> Set.Set b
                -> [Set.Set (FloodNode b)]
@@ -91,7 +91,7 @@ floodAllHelper graph open sofar =
 
 {- | Floods all regions of r graph reachable from the given open nodes
      Discards depth, leaving only the filled coordinates-}
-simpleFloodAll :: (PathGraph a b, Ord b)
+simpleFloodAll :: (Graph a b, Ord b)
                => a           -- ^ the graph to be flooded
                -> Set.Set b   -- ^ the set of all open nodes
                -> [Set.Set b] -- ^ the resulting flooded regions
@@ -100,7 +100,7 @@ simpleFloodAll graph open =
 
 
 -- | Get a pair of points whose distance is maximum. Returns nothing if the set is empty.
-getMaxDistance :: (PathGraph a b, Ord b)
+getMaxDistance :: (Graph a b, Ord b)
                => a
                -> Set.Set b
                -> Maybe (b, b, Int)
