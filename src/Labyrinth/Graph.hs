@@ -31,5 +31,3 @@ class Heuristic a where
 -- | Glass signifying if an object is "passable" for mazes
 class Open a where
     isOpen :: a -> Bool
-
-

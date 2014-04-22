@@ -15,29 +15,39 @@ module Labyrinth.Maze(
     Maze(..),
     Node(..),
     Invertible(..),
-    isNode
+    isNode,
+    getCoord
 ) where
 
-data Node a = Node a
-            | Solid
-            | OutOfBounds
+data Node a b = Node a b
+              | Solid b
+              | OutOfBounds b
     deriving (Ord, Eq)
 
 
-isNode :: Node a -> Bool
-isNode (Node _) = True
+isNode :: Node a b -> Bool
+isNode (Node _ _) = True
 isNode _ = False
 
-
+getCoord :: Node a b -> b
+getCoord (Node _ x) = x
+getCoord (Solid x) = x
+getCoord (OutOfBounds x) = x
 {- | A graph where some nodes are passable but others are not.
    A maze also has a notion a border, made up of nodes which
-   are considered out of bounds. -}
-class Maze a b c | a -> b where
+   are considered out of bounds.
+    a - the underlying collection type
+    b - the element representing nodes in the graph
+    c - the coordinate indexing nodes
+   -}
+class Functor a => Maze a b c | a -> b where
     -- | Get adjacent nodes to a given vertex
-    getAdjacent :: a -> c -> [(Node b, Float)]
-    getNode :: a -> c -> Node b
+    getAdjacent :: a b -> c -> [(Node b c, Float)]
+    getNode :: a b -> c -> Node b c
+    isHardBound :: a b -> c -> Bool
     -- | Returns the passability of the given node.
-    isPassable :: a -> c -> Bool
+    isPassable :: a b -> c -> Bool
+    isPassable g coord = (isNode . snd) $ (,) coord $ getNode g coord
 
 class Invertible a where
     invert :: a -> a

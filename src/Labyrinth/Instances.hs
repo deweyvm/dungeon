@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-|
 Module      : Labyrinth.PathGraph
@@ -46,16 +46,15 @@ instance Open a => Graph (Array2d a) Point where
 
 infinity :: Float
 infinity = 1 / 0
-instance Open a => Maze (Array2d a) a Point where
+instance Open a => Maze Array2d a Point where
     getAdjacent g pt = undefined mapNode <$> ns
        where ns = getNode g <$> getNeighbors8 pt
-             mapNode (qt, n) = (n, euclid pt qt)
+             mapNode ((x, y), n) = (n, euclid pt (x, y))
              mapNode (_, x) = (x, infinity)
     getNode g pt = (case geti g pt of
-                               Just x | isOpen x -> Node x
-                               Just _ -> Solid
-                               _      -> OutOfBounds)
-    isPassable g pt = (isNode . snd) $ (,) pt $ getNode g pt
+                        Just x | isOpen x -> Node x pt
+                        Just _ -> Solid pt
+                        _      -> OutOfBounds pt)
 
 instance Heuristic Point where
     guessLength = (/ 1.5) .: euclid

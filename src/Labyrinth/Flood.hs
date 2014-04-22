@@ -19,14 +19,36 @@ module Labyrinth.Flood(
 import Control.Applicative
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
+import qualified Data.List as List
 import Labyrinth.Graph
 import Labyrinth.Maze
 
+data Flood a b = Flood (Set.Set a) (Seq.Seq b)
 
-data Flood a = Flood (Set.Set a) (Seq.Seq a)
+mkFlood :: a -> b -> Flood a b
+mkFlood x y = Flood (Set.singleton x) (Seq.singleton y)
 
-mkFlood :: a -> Flood a
-mkFlood x = Flood (Set.singleton x) (Seq.singleton x)
+floodMaze :: (Maze a b c, Ord b, Ord c)
+          => a b
+          -> c
+          -> Set.Set (Node b c)
+floodMaze g pt = floodMazeHelper g $ mkFlood (getNode g pt) pt
+
+floodMazeHelper :: (Maze a b c, Ord b, Ord c)
+                => a b
+                -> Flood (Node b c) c -- b == Bool, c == Point
+                -> Set.Set (Node b c)
+floodMazeHelper     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
+floodMazeHelper graph (Flood pts (Seq.viewl -> pt Seq.:< work)) =
+    floodMazeHelper graph (Flood full q)
+    where q = (Seq.fromList (getCoord <$> newWork)) Seq.>< work
+          full = Set.union pts (Set.fromList (fst <$> adj))
+          newWork = filter notMember $ fst <$> open
+          open= List.filter (isNode.fst) adj
+          adj = getAdjacent graph pt
+          notMember x = Set.notMember x pts
+
+
 
 
 -- | Floods a graph starting from the given node
@@ -34,12 +56,12 @@ floodFill :: (Graph a b, Ord b)
           => a         -- ^ the graph to be flooded
           -> b         -- ^ the seed point
           -> Set.Set b -- ^ the set of flooded nodes
-floodFill graph pt = floodHelper graph $ mkFlood pt
+floodFill graph pt = floodHelper graph $ mkFlood pt pt
 
 
 floodHelper :: (Graph a b, Ord b)
             => a
-            -> Flood b
+            -> Flood b b
             -> Set.Set b
 floodHelper     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
 floodHelper graph (Flood pts (Seq.viewl -> pt Seq.:< work)) =
@@ -71,9 +93,11 @@ floodAllHelper graph open sofar =
 
 
 
--- pad grid with open space
 -- invert grid
 -- flood fill exterior (can always start at (0,0))
--- any wall that is touched that is not out of bounds is a
-computeBorder :: (Invertible b, Ord c, Maze a b c) => a
-computeBorder = undefined
+-- any wall that is touched that is not out of bounds is a boundary
+-- any wall touching the edge of the map is a boundary
+computeBorder :: (Invertible b, Ord c, Maze a b c) => a b => Set.Set c
+computeBorder m =
+    let inverted = invert <$> m in
+    undefined
