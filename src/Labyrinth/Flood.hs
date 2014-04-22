@@ -31,8 +31,8 @@ getDepth :: FloodNode a -> Int
 getDepth (FloodNode i _) = i
 
 -- | Returns the coordinate of a flooded node
-getNode :: FloodNode a -> a
-getNode (FloodNode _ x) = x
+getCoord :: FloodNode a -> a
+getCoord (FloodNode _ x) = x
 
 instance Eq a => Eq (FloodNode a) where
     (FloodNode _ x) == (FloodNode _ y) = x == y
@@ -42,10 +42,10 @@ instance Ord a => Ord (FloodNode a) where
 
 data Flood a = Flood (Set.Set (FloodNode a)) (Seq.Seq (FloodNode a))
 
-
 mkFlood :: a -> Flood a
-mkFlood x = Flood ((Set.singleton . mkNode) x) ((Seq.singleton . mkNode) x)
+mkFlood x = Flood (Set.singleton . mkNode $ x) (Seq.singleton . mkNode $ x)
     where mkNode = FloodNode 0
+
 -- | Floods a graph starting from the given node
 floodFill :: (Graph a b, Ord b)
           => a                     -- ^ the graph to be flooded
@@ -86,7 +86,7 @@ floodAllHelper graph open sofar =
                        let newOpen = nodeDiff open filled in
                        floodAllHelper graph newOpen (filled:sofar)
         Nothing -> sofar
-    where nodeDiff r s = Set.difference r (Set.map getNode s)
+    where nodeDiff r s = Set.difference r (Set.map getCoord s)
 
 {- | Floods all regions of r graph reachable from the given open nodes
      Discards depth, leaving only the filled coordinates-}
@@ -95,9 +95,13 @@ simpleFloodAll :: (Graph a b, Ord b)
                -> Set.Set b   -- ^ the set of all open nodes
                -> [Set.Set b] -- ^ the resulting flooded regions
 simpleFloodAll graph open =
-    Set.map getNode <$> floodAll graph open
+    Set.map getCoord <$> floodAll graph open
 
 
 
-computeBorder :: (Ord c, Maze a b c) => a
+-- pad grid with open space
+-- invert grid
+-- flood fill exterior (can always start at (0,0))
+-- any wall that is touched that is not out of bounds is a
+computeBorder :: (Invertible b, Ord c, Maze a b c) => a
 computeBorder = undefined

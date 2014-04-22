@@ -14,12 +14,15 @@ types of graphs
 module Labyrinth.Maze(
     Maze(..),
     Node(..),
+    Invertible(..),
     isNode
 ) where
 
 data Node a = Node a
             | Solid
             | OutOfBounds
+    deriving (Ord, Eq)
+
 
 isNode :: Node a -> Bool
 isNode (Node _) = True
@@ -31,11 +34,10 @@ isNode _ = False
    are considered out of bounds. -}
 class Maze a b c | a -> b where
     -- | Get adjacent nodes to a given vertex
-    getAdjacent :: a
-                -> c
-                -> [(Node b, Float)]
-
+    getAdjacent :: a -> c -> [(Node b, Float)]
+    getNode :: a -> c -> Node b
     -- | Returns the passability of the given node.
-    isPassable :: a
-               -> c
-               -> Bool
+    isPassable :: a -> c -> Bool
+
+class Invertible a where
+    invert :: a -> a

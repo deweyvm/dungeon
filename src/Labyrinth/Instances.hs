@@ -44,12 +44,6 @@ instance Open a => Graph (Array2d a) Point where
              open = (any isOpen) . (geti g)
 
 
-getNode :: Open a => Array2d a -> Point -> (Point, Node a)
-getNode g pt = (,) pt (case geti g pt of
-                   Just x | isOpen x -> Node x
-                   Just _ -> Solid
-                   _      -> OutOfBounds)
-
 infinity :: Float
 infinity = 1 / 0
 instance Open a => Maze (Array2d a) a Point where
@@ -57,8 +51,11 @@ instance Open a => Maze (Array2d a) a Point where
        where ns = getNode g <$> getNeighbors8 pt
              mapNode (qt, n) = (n, euclid pt qt)
              mapNode (_, x) = (x, infinity)
-
-    isPassable g pt = (isNode . snd) $ getNode g pt
+    getNode g pt = (case geti g pt of
+                               Just x | isOpen x -> Node x
+                               Just _ -> Solid
+                               _      -> OutOfBounds)
+    isPassable g pt = (isNode . snd) $ (,) pt $ getNode g pt
 
 instance Heuristic Point where
     guessLength = (/ 1.5) .: euclid
