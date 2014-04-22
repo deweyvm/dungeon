@@ -13,8 +13,6 @@ Implementation of flood fill for arbitrary graphs.
 module Labyrinth.Flood(
     floodFill,
     floodAll,
-    simpleFloodAll,
-    getDepth,
     getNode
 ) where
 
@@ -24,78 +22,52 @@ import qualified Data.Sequence as Seq
 import Labyrinth.Graph
 import Labyrinth.Maze
 
-data FloodNode a = FloodNode Int a
 
--- | Returns the distance a flooded node is from the origin node
-getDepth :: FloodNode a -> Int
-getDepth (FloodNode i _) = i
-
--- | Returns the coordinate of a flooded node
-getCoord :: FloodNode a -> a
-getCoord (FloodNode _ x) = x
-
-instance Eq a => Eq (FloodNode a) where
-    (FloodNode _ x) == (FloodNode _ y) = x == y
-
-instance Ord a => Ord (FloodNode a) where
-    compare (FloodNode _ x) (FloodNode _ y) = compare x y
-
-data Flood a = Flood (Set.Set (FloodNode a)) (Seq.Seq (FloodNode a))
+data Flood a = Flood (Set.Set a) (Seq.Seq a)
 
 mkFlood :: a -> Flood a
-mkFlood x = Flood (Set.singleton . mkNode $ x) (Seq.singleton . mkNode $ x)
-    where mkNode = FloodNode 0
+mkFlood x = Flood (Set.singleton x) (Seq.singleton x)
+
 
 -- | Floods a graph starting from the given node
 floodFill :: (Graph a b, Ord b)
-          => a                     -- ^ the graph to be flooded
-          -> b                     -- ^ the seed point
-          -> Set.Set (FloodNode b) -- ^ the set of flooded nodes
+          => a         -- ^ the graph to be flooded
+          -> b         -- ^ the seed point
+          -> Set.Set b -- ^ the set of flooded nodes
 floodFill graph pt = floodHelper graph $ mkFlood pt
 
 
 floodHelper :: (Graph a b, Ord b)
             => a
             -> Flood b
-            -> Set.Set (FloodNode b)
+            -> Set.Set b
 floodHelper     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
-floodHelper graph (Flood pts (Seq.viewl -> (FloodNode depth pt) Seq.:< work)) =
+floodHelper graph (Flood pts (Seq.viewl -> pt Seq.:< work)) =
     floodHelper graph (Flood full q)
-    where q = (Seq.fromList lst) Seq.>< work
-          full = Set.union pts (Set.fromList lst)
-          lst = zipWith ($) (FloodNode <$> (repeat (depth + 1))) ns
+    where q = (Seq.fromList ns) Seq.>< work
+          full = Set.union pts (Set.fromList ns)
           ns = filter notMember $ fst <$> getNeighbors graph pt
-          notMember x = Set.notMember (FloodNode 0 x) pts
+          notMember x = Set.notMember x pts
 
 -- | Floods all given passable regions on a given graph.
 floodAll :: (Graph a b, Ord b)
-         => a                       -- ^ the graph to be flooded
-         -> Set.Set b               -- ^ the set of all open nodes
-         -> [Set.Set (FloodNode b)] -- ^ the resulting flooded regions
+         => a           -- ^ the graph to be flooded
+         -> Set.Set b   -- ^ the set of all open nodes
+         -> [Set.Set b] -- ^ the resulting flooded regions
 floodAll graph open = floodAllHelper graph open []
 
 
 floodAllHelper :: (Graph a b, Ord b)
                => a
                -> Set.Set b
-               -> [Set.Set (FloodNode b)]
-               -> [Set.Set (FloodNode b)]
+               -> [Set.Set b]
+               -> [Set.Set b]
 floodAllHelper graph open sofar =
     case Set.minView open of
         Just (x, _) -> let filled = floodFill graph x in
-                       let newOpen = nodeDiff open filled in
+                       let newOpen = Set.difference open filled in
                        floodAllHelper graph newOpen (filled:sofar)
         Nothing -> sofar
-    where nodeDiff r s = Set.difference r (Set.map getCoord s)
-
-{- | Floods all regions of r graph reachable from the given open nodes
-     Discards depth, leaving only the filled coordinates-}
-simpleFloodAll :: (Graph a b, Ord b)
-               => a           -- ^ the graph to be flooded
-               -> Set.Set b   -- ^ the set of all open nodes
-               -> [Set.Set b] -- ^ the resulting flooded regions
-simpleFloodAll graph open =
-    Set.map getCoord <$> floodAll graph open
 
 
 

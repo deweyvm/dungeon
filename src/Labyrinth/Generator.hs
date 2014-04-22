@@ -161,7 +161,7 @@ processMaze pfind processMask processFlooded processPathed p@(Params seed rows c
     let initial = makeRandom seed cols rows
     let permuted = endo initial
     let open = getOpen permuted
-    let flooded = F.simpleFloodAll permuted open
+    let flooded = F.floodAll permuted open
     let biggest = ((:[]) . largest) flooded
     let paths = catMaybes $ (createPath pfind permuted) <$=> biggest
     let pathRegions = mkPathRegion <$> paths
