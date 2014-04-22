@@ -15,15 +15,14 @@ module Labyrinth.Flood(
     floodAll,
     simpleFloodAll,
     getDepth,
-    getNode,
-    getMaxDistance
+    getNode
 ) where
 
 import Control.Applicative
-import Data.Foldable(maximumBy)
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import Labyrinth.Graph
+import Labyrinth.Maze
 
 data FloodNode a = FloodNode Int a
 
@@ -99,17 +98,6 @@ simpleFloodAll graph open =
     Set.map getNode <$> floodAll graph open
 
 
--- | Get a pair of points whose distance is maximum. Returns nothing if the set is empty.
-getMaxDistance :: (Graph a b, Ord b)
-               => a
-               -> Set.Set b
-               -> Maybe (b, b, Int)
-getMaxDistance graph open =
-    case Set.minView open of
-        Just (seed, _) -> let flooded1 = floodFill graph seed in
-                          let pFlood = maximumBy compareDepth flooded1 in
-                          let flooded2 = floodFill graph $ getNode pFlood in
-                          let qFlood = maximumBy compareDepth flooded2 in
-                          Just (getNode pFlood, getNode qFlood, getDepth pFlood)
-        Nothing -> Nothing
-    where compareDepth (FloodNode i _) (FloodNode j _) = i `compare` j
+
+computeBorder :: (Ord c, Maze a b c) => a
+computeBorder = undefined

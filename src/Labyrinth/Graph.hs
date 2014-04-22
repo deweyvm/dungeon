@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, FlexibleInstances, FunctionalDependencies #-}
 {-|
 Module      : Labyrinth.PathGraph
 Description : graph typeclass
@@ -11,20 +11,25 @@ Portability : unknown
 A graph and associated typeclasses for doing flood fills, pathfinding, etc
 independent of data structure.
 -}
-module Labyrinth.Graph(Graph(..), Metric(..), Open(..)) where
+module Labyrinth.Graph(
+    Graph(..),
+    Heuristic(..),
+    Open(..)
+) where
 
 -- | A graph with underlying type a and coordinate type b
 class Graph a b where
     getNeighbors :: a            -- ^ the underlying collection
-                 -> b            {- ^ the coordinate from which to
-                                      get neighboring nodes -}
-                 -> [(b, Float)] -- ^ a list of node,cost tuples
+                 -> b            -- ^ the coordinate of a node
+                 -> [(b, Float)] -- ^ a list of (node coordinate,cost) tuples
+
 
 -- | A metric for measuring the distance between two objects
-class Metric a where
+class Heuristic a where
     guessLength :: a -> a -> Float
 
--- | Whether or not an object is considered passable
+-- | Glass signifying if an object is "passable" for mazes
 class Open a where
     isOpen :: a -> Bool
+
 

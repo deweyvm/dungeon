@@ -22,6 +22,7 @@ import Data.Foldable(any)
 import Labyrinth.Data.Array2d
 import Labyrinth.Pathing.Util
 import Labyrinth.Graph
+import Labyrinth.Maze
 import Labyrinth.Util
 
 instance Open Bool where
@@ -38,9 +39,26 @@ getNeighbors8 (i, j) = ((i +) *** (j +)) <$> neighbors8
 
 
 instance Open a => Graph (Array2d a) Point where
-   getNeighbors arr pt = ap (,) (euclid pt) <$> ns
+   getNeighbors g pt = ap (,) (euclid pt) <$> ns
        where ns = filter open $ getNeighbors8 pt
-             open = (any isOpen) . (geti arr)
+             open = (any isOpen) . (geti g)
 
-instance Metric Point where
+
+getNode :: Open a => Array2d a -> Point -> (Point, Node a)
+getNode g pt = (,) pt (case geti g pt of
+                   Just x | isOpen x -> Node x
+                   Just _ -> Solid
+                   _      -> OutOfBounds)
+
+infinity :: Float
+infinity = 1 / 0
+instance Open a => Maze (Array2d a) a Point where
+    getAdjacent g pt = undefined mapNode <$> ns
+       where ns = getNode g <$> getNeighbors8 pt
+             mapNode (qt, n) = (n, euclid pt qt)
+             mapNode (_, x) = (x, infinity)
+
+    isPassable g pt = (isNode . snd) $ getNode g pt
+
+instance Heuristic Point where
     guessLength = (/ 1.5) .: euclid

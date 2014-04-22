@@ -98,15 +98,14 @@ toPixelArray seed cols rows regions =
               | Set.member pt rest = color
               | elem pt path = white
 
-createPath :: (Ord Point, Metric Point, Graph (Array2d Bool) Point)
+createPath :: (Ord Point, Heuristic Point, Graph (Array2d Bool) Point)
            => (Array2d Bool -> Point -> Point -> Either String [Point])
            -> Array2d Bool
            -> Set.Set Point
            -> Maybe (Point, Point, Set.Set Point, [Point])
 createPath pfind arr area =
-    case F.getMaxDistance arr area of
-        Just (x, y, d) ->
-            let rest = trace ("DEPTH: " ++ show d) $ Set.difference area (Set.fromList [x, y]) in
+    case minMaxView area of
+        Just (x, y, rest) ->
             case pfind arr x y of
                 Right pts ->
                      Just (x, y, removed, pts)
@@ -141,7 +140,7 @@ savePathed :: Params a -> Array2d Color -> IO ()
 savePathed _ = saveMap "flood.png"
 
 
-doSimple :: (Ord Point, Metric Point, Graph (Array2d Bool) Point)
+doSimple :: (Ord Point, Heuristic Point, Graph (Array2d Bool) Point)
          => (Array2d Bool -> Point -> Point -> Either String [Point])
          -> Int
          -> IO ()
@@ -151,7 +150,7 @@ doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params 
                              , M.occuCount 5
                              ])
 
-processMaze :: (Ord Point, Metric Point, Graph (Array2d Bool) Point)
+processMaze :: (Ord Point, Heuristic Point, Graph (Array2d Bool) Point)
             => (Array2d Bool -> Point -> Point -> Either String [Point])
             -> (Params (Array2d Bool) -> Array2d Bool -> IO ())
             -> (Params (Array2d Bool) -> [Set.Set Point] -> IO ())

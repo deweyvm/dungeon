@@ -1,5 +1,5 @@
-{-# LANGUAGE ScopedTypeVariables
- #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 import Labyrinth.Generator
 import qualified Labyrinth.Pathing.JumpPoint as J
 import System.Random
