@@ -145,8 +145,8 @@ updatePath :: (Heuristic Point)
            -> (Map.Map Point Float, Q.PSQ Point Float, Map.Map Point Point)
            -> Point
            -> (Map.Map Point Float, Q.PSQ Point Float, Map.Map Point Point)
-updatePath checkOpen goal current closed s@(gs, fs, p) nnode = --warning, node cost is ignored, cost must be uniform for this algorithm
-
+--warning, node cost is ignored, cost must be uniform for this algorithm
+updatePath checkOpen goal current closed s@(gs, fs, p) nnode =
     let jMaybe = jump checkOpen goal nnode current in
     case jMaybe of
         Just jumpPoint | Set.notMember jumpPoint closed ->
@@ -164,7 +164,8 @@ updatePath checkOpen goal current closed s@(gs, fs, p) nnode = --warning, node c
         _ -> s
 
 
--- | Find a shortest path from the start node to the goal node.
+{- | Find a shortest path from the start node to the goal node assuming
+     uniform edge costs-}
 pfind :: (Open a, Heuristic Point, Graph Array2d a Point)
       => Array2d a             -- ^ the graph to be traversed
       -> Point                 -- ^ the start node
