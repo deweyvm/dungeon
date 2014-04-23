@@ -120,6 +120,7 @@ jump checkOpen goal pt@(x, y) (px, py) =
     else jump checkOpen goal (x + dx, y + dy) (x, y)
 
 
+
 pathHelper :: (Heuristic Point, Open a, Graph Array2d a Point)
            => Array2d a
            -> Path Point
@@ -132,7 +133,7 @@ pathHelper graph (Path closedSet gs fsop path goal) =
               let checkOpen pt = any isOpen $ geti graph pt in
               let newClosed = Set.insert currentNode closedSet in
               if currentNode == goal
-              then Right $ rewindPath path goal []
+              then Right $ expandPath expand $ rewindPath path goal []
               else let ns = findNeighbors checkOpen graph currentNode path
                        (gs', fsop', path') = foldl (updatePath checkOpen goal currentNode newClosed) (gs, open, path) ns in
                        pathHelper graph (Path newClosed gs' fsop' path' goal)

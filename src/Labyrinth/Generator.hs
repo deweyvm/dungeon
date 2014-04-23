@@ -164,7 +164,7 @@ processMaze pfind processMask processFlooded processPathed p@(Params seed rows c
     let array = tabulate rows cols False (\pt -> Set.member pt biggest)
     let border = F.computeBorder array False ((0,0) :: Point)
     let paths = catMaybes [createPath pfind permuted biggest]
-    let pathRegions = mkPathRegion <$> (((0,0),(0,0),border,[]):paths)
+    let pathRegions = mkPathRegion <$> (paths ++ [((0,0),(0,0),border,[])])
     let arr = toPixelArray seed cols rows pathRegions
     processMask p permuted
     processFlooded p [biggest]
