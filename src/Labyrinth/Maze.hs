@@ -9,7 +9,7 @@ Stability   : experimental
 Portability : unknown
 
 A maze and associated typeclass for doing fancier things with specific
-types of graphs
+types of graphs.
 -}
 module Labyrinth.Maze(
     Maze(..),

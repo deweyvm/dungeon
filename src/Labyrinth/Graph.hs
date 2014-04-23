@@ -17,7 +17,7 @@ module Labyrinth.Graph(
     Open(..)
 ) where
 
-{- | A graph typeclass
+{- | A graph typeclass.
     a - the underlying collection type
     b - the element representing nodes in the graph
     c - the coordinate indexing nodes
@@ -28,10 +28,10 @@ class Graph a b c where
                  -> [(c, Float)] -- ^ a list of (node coordinate,cost) tuples
 
 
--- | A metric for measuring the distance between two objects
+-- | A metric for measuring the distance between two objects.
 class Heuristic a where
     guessLength :: a -> a -> Float
 
--- | Glass signifying if an object is "passable" for mazes
+-- | Glass signifying if an object is "passable" for mazes.
 class Open a where
     isOpen :: a -> Bool

@@ -137,7 +137,6 @@ pathHelper graph (Path closedSet gs fsop path goal) =
                        (gs', fsop', path') = foldl (updatePath checkOpen goal currentNode newClosed) (gs, open, path) ns in
                        pathHelper graph (Path newClosed gs' fsop' path' goal)
 
---todo: can factor out Array2d a with functional dependency
 updatePath :: (Heuristic Point)
            => (Point -> Bool)
            -> Point
@@ -165,12 +164,12 @@ updatePath checkOpen goal current closed s@(gs, fs, p) nnode = --warning, node c
         _ -> s
 
 
--- | Find a shortest path from the start node to the goal node
+-- | Find a shortest path from the start node to the goal node.
 pfind :: (Open a, Heuristic Point, Graph Array2d a Point)
-      => Array2d a             -- ^ The graph to be traversed
-      -> Point                 -- ^ The start node
-      -> Point                 -- ^ The goal node
-      -> Either String [Point] {- ^ Either a string explaining why a path could
+      => Array2d a             -- ^ the graph to be traversed
+      -> Point                 -- ^ the start node
+      -> Point                 -- ^ the goal node
+      -> Either String [Point] {- ^ either a string explaining why a path could
                                 not be found, or the found shortest path in
-                                order from start to goal.-}
+                                order from start to goal-}
 pfind graph start goal = pathHelper graph $ mkPath start goal

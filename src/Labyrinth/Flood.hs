@@ -53,7 +53,7 @@ floodMazeHelper graph (Flood pts (Seq.viewl -> pt Seq.:< work)) =
 
 
 
--- | Floods a graph starting from the given node
+-- | Floods a graph starting from the given node.
 floodFill :: (Graph a b c, Ord c)
           => a b       -- ^ the graph to be flooded
           -> c         -- ^ the seed point
@@ -95,18 +95,16 @@ floodAllHelper graph open sofar =
 
 
 
--- invert grid
--- add a blank border
--- flood fill exterior (can always start at (0,0))
--- any wall that is touched that is not out of bounds is a boundary
--- any wall touching the edge of the map is a boundary
+{- | Compute the border of a maze. The border is defined to be any open
+     space touching an impassable node, where that impassable node has a
+     chain of impassable nodes leading out of bounds. -}
 computeBorder :: (Border a b c, Maze a b c, Invertible b, Ord b, Ord c)
               => a b
               => b
               -> c
               -> Set.Set c
 computeBorder m blank seed =
-    let (c, revert) = addBorder (m) blank in
+    let (c, revert) = addBorder m blank in
     let nodes = floodMaze (invert <$> c) seed in
     let mapped = catMaybes $ Set.foldr (\node acc -> f node : acc) [] nodes in
     Set.fromList $ map revert mapped

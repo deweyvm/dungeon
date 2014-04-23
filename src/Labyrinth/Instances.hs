@@ -35,11 +35,9 @@ neighbors8 :: [Point]
 neighbors8 = ns
     where ns = [ (x, y) | x <- [-1..1], y <- [-1..1], not (x == 0 && y == 0) ]
 
--- | Retrieves the 8 neighbors of a 2d point
+-- | Retrieves the 8 neighbors of a 2d point.
 getNeighbors8 :: Point -> [Point]
 getNeighbors8 (i, j) = ((i +) *** (j +)) <$> neighbors8
--- (\(x, y)-> (i + x, j + y)) === (i +) *** (j +)
-
 
 instance Open a => Graph Array2d a Point where
    getNeighbors g pt = ap (,) (euclid pt) <$> ns
@@ -49,6 +47,7 @@ instance Open a => Graph Array2d a Point where
 
 infinity :: Float
 infinity = 1 / 0
+
 instance Open a => Maze Array2d a Point where
     getAdjacent g pt = mapNode <$> ns
        where ns :: [Node a Point]
