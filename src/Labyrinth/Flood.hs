@@ -106,8 +106,8 @@ computeBorder :: (Border a b c, Maze a b c, Invertible b, Ord b, Ord c)
               -> c
               -> Set.Set c
 computeBorder m blank seed =
-    let (c, revert) = addBorder (invert <$> m) blank in
-    let nodes = floodMaze c seed in
+    let (c, revert) = addBorder (m) blank in
+    let nodes = floodMaze (invert <$> c) seed in
     let mapped = catMaybes $ Set.foldr (\node acc -> f node : acc) [] nodes in
     Set.fromList $ map revert mapped
     where f (Node _ _) = Nothing

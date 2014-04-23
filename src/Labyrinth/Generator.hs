@@ -145,8 +145,7 @@ doSimple :: (Ord Point, Heuristic Point, Graph Array2d Bool Point)
          -> Int
          -> IO ()
 doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params seed 200 200 transform)
-    where transform = (M.<.> [ M.negate
-                             , M.occuCount 7
+    where transform = (M.<.> [ M.occuCount 7
                              , M.vertStrip True 4
                              , M.occuCount 5
                              ])
@@ -164,7 +163,7 @@ processMaze pfind processMask processFlooded processPathed p@(Params seed rows c
     let flooded = F.floodAll permuted open
     let biggest = largest flooded
     let array = tabulate rows cols False (\pt -> Set.member pt biggest)
-    let border = F.computeBorder array True ((0,0) :: Point)
+    let border = F.computeBorder array False ((0,0) :: Point)
     let paths = catMaybes [createPath pfind permuted biggest]
     let pathRegions = mkPathRegion <$> (((0,0),(0,0),border,[]):paths)
     let arr = toPixelArray seed cols rows pathRegions
