@@ -15,6 +15,7 @@ module Labyrinth.Maze(
     Maze(..),
     Node(..),
     Invertible(..),
+    Border(..),
     isNode,
     getCoord
 ) where
@@ -38,9 +39,8 @@ getCoord (OutOfBounds x) = x
    are considered out of bounds.
     a - the underlying collection type
     b - the element representing nodes in the graph
-    c - the coordinate indexing nodes
-   -}
-class Functor a => Maze a b c | a -> b where
+    c - the coordinate indexing nodes -}
+class Functor a => Maze a b c | a -> c where
     -- | Get adjacent nodes to a given vertex
     getAdjacent :: a b -> c -> [(Node b c, Float)]
     getNode :: a b -> c -> Node b c
@@ -48,6 +48,12 @@ class Functor a => Maze a b c | a -> b where
     -- | Returns the passability of the given node.
     isPassable :: a b -> c -> Bool
     isPassable g coord = (isNode . snd) $ (,) coord $ getNode g coord
+
+class Border a b c | a -> c where
+    addBorder :: a b
+              -> b
+              -> (a b, c -> c)
+
 
 class Invertible a where
     invert :: a -> a

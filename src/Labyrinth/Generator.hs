@@ -98,7 +98,7 @@ toPixelArray seed cols rows regions =
               | Set.member pt rest = color
               | elem pt path = white
 
-createPath :: (Ord Point, Heuristic Point, Graph (Array2d Bool) Point)
+createPath :: (Ord Point, Heuristic Point, Graph Array2d Bool Point)
            => (Array2d Bool -> Point -> Point -> Either String [Point])
            -> Array2d Bool
            -> Set.Set Point
@@ -140,18 +140,18 @@ savePathed :: Params a -> Array2d Color -> IO ()
 savePathed _ = saveMap "flood.png"
 
 
-doSimple :: (Ord Point, Heuristic Point, Graph (Array2d Bool) Point)
+doSimple :: (Ord Point, Heuristic Point, Graph Array2d Bool Point)
          => (Array2d Bool -> Point -> Point -> Either String [Point])
          -> Int
          -> IO ()
-doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params seed 20 20 transform)
-    where transform = (M.<.> [ M.occuCount 7
+doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params seed 200 200 transform)
+    where transform = (M.<.> [ M.negate
+                             , M.occuCount 7
                              , M.vertStrip True 4
                              , M.occuCount 5
                              ])
 
-processMaze :: (Ord Point, Heuristic Point, Graph (Array2d Bool) Point)
-            => (Array2d Bool -> Point -> Point -> Either String [Point])
+processMaze :: (Array2d Bool -> Point -> Point -> Either String [Point])
             -> (Params (Array2d Bool) -> Array2d Bool -> IO ())
             -> (Params (Array2d Bool) -> [Set.Set Point] -> IO ())
             -> (Params (Array2d Bool) -> Array2d Color -> IO ())
@@ -162,10 +162,12 @@ processMaze pfind processMask processFlooded processPathed p@(Params seed rows c
     let permuted = endo initial
     let open = getOpen permuted
     let flooded = F.floodAll permuted open
-    let biggest = ((:[]) . largest) flooded
-    let paths = catMaybes $ (createPath pfind permuted) <$=> biggest
-    let pathRegions = mkPathRegion <$> paths
+    let biggest = largest flooded
+    let array = tabulate rows cols False (\pt -> Set.member pt biggest)
+    let border = F.computeBorder array True ((0,0) :: Point)
+    let paths = catMaybes [createPath pfind permuted biggest]
+    let pathRegions = mkPathRegion <$> (((0,0),(0,0),border,[]):paths)
     let arr = toPixelArray seed cols rows pathRegions
     processMask p permuted
-    processFlooded p biggest
+    processFlooded p [biggest]
     processPathed p arr

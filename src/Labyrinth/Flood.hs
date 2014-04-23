@@ -13,10 +13,12 @@ Implementation of flood fill for arbitrary graphs.
 module Labyrinth.Flood(
     floodFill,
     floodAll,
-    getNode
+    getNode,
+    computeBorder
 ) where
 
 import Control.Applicative
+import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import qualified Data.List as List
@@ -52,17 +54,17 @@ floodMazeHelper graph (Flood pts (Seq.viewl -> pt Seq.:< work)) =
 
 
 -- | Floods a graph starting from the given node
-floodFill :: (Graph a b, Ord b)
-          => a         -- ^ the graph to be flooded
-          -> b         -- ^ the seed point
-          -> Set.Set b -- ^ the set of flooded nodes
+floodFill :: (Graph a b c, Ord c)
+          => a b       -- ^ the graph to be flooded
+          -> c         -- ^ the seed point
+          -> Set.Set c -- ^ the set of flooded nodes
 floodFill graph pt = floodHelper graph $ mkFlood pt pt
 
 
-floodHelper :: (Graph a b, Ord b)
-            => a
-            -> Flood b b
-            -> Set.Set b
+floodHelper :: (Graph a b c, Ord c)
+            => a b
+            -> Flood c c
+            -> Set.Set c
 floodHelper     _ (Flood pts (Seq.viewl -> Seq.EmptyL)) = pts
 floodHelper graph (Flood pts (Seq.viewl -> pt Seq.:< work)) =
     floodHelper graph (Flood full q)
@@ -72,18 +74,18 @@ floodHelper graph (Flood pts (Seq.viewl -> pt Seq.:< work)) =
           notMember x = Set.notMember x pts
 
 -- | Floods all given passable regions on a given graph.
-floodAll :: (Graph a b, Ord b)
-         => a           -- ^ the graph to be flooded
-         -> Set.Set b   -- ^ the set of all open nodes
-         -> [Set.Set b] -- ^ the resulting flooded regions
+floodAll :: (Graph a b c, Ord c)
+         => a b         -- ^ the graph to be flooded
+         -> Set.Set c   -- ^ the set of all open nodes
+         -> [Set.Set c] -- ^ the resulting flooded regions
 floodAll graph open = floodAllHelper graph open []
 
 
-floodAllHelper :: (Graph a b, Ord b)
-               => a
-               -> Set.Set b
-               -> [Set.Set b]
-               -> [Set.Set b]
+floodAllHelper :: (Graph a b c, Ord c)
+               => a b
+               -> Set.Set c
+               -> [Set.Set c]
+               -> [Set.Set c]
 floodAllHelper graph open sofar =
     case Set.minView open of
         Just (x, _) -> let filled = floodFill graph x in
@@ -94,10 +96,23 @@ floodAllHelper graph open sofar =
 
 
 -- invert grid
+-- add a blank border
 -- flood fill exterior (can always start at (0,0))
 -- any wall that is touched that is not out of bounds is a boundary
 -- any wall touching the edge of the map is a boundary
-computeBorder :: (Invertible b, Ord c, Maze a b c) => a b => Set.Set c
-computeBorder m =
-    let inverted = invert <$> m in
-    undefined
+computeBorder :: (Border a b c, Maze a b c, Invertible b, Ord b, Ord c)
+              => a b
+              => b
+              -> c
+              -> Set.Set c
+computeBorder m blank seed =
+    let (c, revert) = addBorder (invert <$> m) blank in
+    let nodes = floodMaze c seed in
+    let mapped = catMaybes $ Set.foldr (\node acc -> f node : acc) [] nodes in
+    Set.fromList $ map revert mapped
+    where f (Node _ _) = Nothing
+          f (OutOfBounds p) = Just p
+          f (Solid p) = Just p
+
+
+

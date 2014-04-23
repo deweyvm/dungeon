@@ -38,7 +38,7 @@ mkPath start goal = Path Set.empty
                          Map.empty
                          goal
 
-findNeighbors :: (Graph (Array2d a) Point)
+findNeighbors :: (Graph Array2d a Point)
               => (Point -> Bool)
               -> Array2d a
               -> Point
@@ -120,7 +120,7 @@ jump checkOpen goal pt@(x, y) (px, py) =
     else jump checkOpen goal (x + dx, y + dy) (x, y)
 
 
-pathHelper :: (Heuristic Point, Open a, Graph (Array2d a) Point)
+pathHelper :: (Heuristic Point, Open a, Graph Array2d a Point)
            => Array2d a
            -> Path Point
            -> Either String [Point]
@@ -166,7 +166,7 @@ updatePath checkOpen goal current closed s@(gs, fs, p) nnode = --warning, node c
 
 
 -- | Find a shortest path from the start node to the goal node
-pfind :: (Open a, Heuristic Point, Graph (Array2d a) Point)
+pfind :: (Open a, Heuristic Point, Graph Array2d a Point)
       => Array2d a             -- ^ The graph to be traversed
       -> Point                 -- ^ The start node
       -> Point                 -- ^ The goal node

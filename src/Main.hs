@@ -8,7 +8,7 @@ import System.Random
 main :: IO ()
 main = do
     let useGlobalRng = False
-    seed <- select randomIO (return 0) useGlobalRng
+    seed <- select (return 1) randomIO useGlobalRng
     putStrLn $ "Seed: " ++ show seed
     doSimple J.pfind seed
 

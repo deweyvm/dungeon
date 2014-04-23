@@ -17,11 +17,15 @@ module Labyrinth.Graph(
     Open(..)
 ) where
 
--- | A graph with underlying type a and coordinate type b
-class Graph a b where
-    getNeighbors :: a            -- ^ the underlying collection
-                 -> b            -- ^ the coordinate of a node
-                 -> [(b, Float)] -- ^ a list of (node coordinate,cost) tuples
+{- | A graph typeclass
+    a - the underlying collection type
+    b - the element representing nodes in the graph
+    c - the coordinate indexing nodes
+   -}
+class Graph a b c where
+    getNeighbors :: a b          -- ^ the underlying collection
+                 -> c            -- ^ the coordinate of a node
+                 -> [(c, Float)] -- ^ a list of (node coordinate,cost) tuples
 
 
 -- | A metric for measuring the distance between two objects
