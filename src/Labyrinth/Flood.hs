@@ -14,7 +14,8 @@ module Labyrinth.Flood(
     floodFill,
     floodAll,
     getNode,
-    computeBorder
+    computeBorder,
+    getDiameter
 ) where
 
 import Control.Applicative
@@ -22,6 +23,8 @@ import Data.Maybe
 import qualified Data.Set as Set
 import qualified Data.Sequence as Seq
 import qualified Data.List as List
+import qualified Labyrinth.Pathing.AStar as A
+import Labyrinth.Util
 import Labyrinth.Graph
 import Labyrinth.Maze
 
@@ -100,7 +103,7 @@ floodAllHelper graph open sofar =
      chain of impassable nodes leading out of bounds. -}
 computeBorder :: (Border a b c, Maze a b c, Invertible b, Ord b, Ord c)
               => a b
-              => b
+              -> b
               -> c
               -> Set.Set c
 computeBorder m blank seed =
@@ -114,3 +117,18 @@ computeBorder m blank seed =
 
 
 
+getDiameter :: (Show c, Invertible b, Ord b, Ord c, Heuristic c, Border a b c, Maze a b c, Graph a b c)
+            => a b
+            -> b
+            -> c
+            -> (Int, c, c, [c])
+getDiameter g blank pt =
+    let borders = Set.toList $ computeBorder g blank pt in
+    let pairs = [ (x, y) | x <- borders, y <- borders, x /= y] in
+    --let !_ = myTrace $ pairs in
+    --fixme, do not ignore failures as they should be impossible!
+    let e = catEithers $ (\(start, goal) -> A.pfind g start goal) <$> pairs in
+    let paths = snd e in
+
+    let lengths = (\(l, path) -> (l, head path, last path, path)) <$> zip (length <$> paths) paths in
+    List.maximumBy (\(l, _, _, _) (r, _, _, _) -> l `compare` r) lengths

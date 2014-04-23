@@ -13,7 +13,7 @@ echo "Building... "
 rm -f $EXE &&\
 cabal build &> /dev/null &&\
 echo "Running labyrinth... "  &&\
-time $EXE +RTS -N -K100M
+time $EXE +RTS -N -K100M -M3.9G
 if [[ $? -ne 0 ]] ; then
     echo "failed"
 fi

@@ -16,7 +16,7 @@ import Prelude hiding(elem, all)
 import qualified Data.Map as Map
 import qualified Data.PSQueue as Q
 import qualified Data.Set as Set
-import Labyrinth.PathGraph
+import Labyrinth.Graph
 import Labyrinth.Pathing.Util
 
 data Path b = Path (Set.Set b)       -- closed set
@@ -25,19 +25,19 @@ data Path b = Path (Set.Set b)       -- closed set
                    (Map.Map b b)     -- path so far
                    b                 -- goal node
 
-mkPath :: (Metric a, Ord a) => a -> a -> Path a
+mkPath :: (Heuristic a, Ord a) => a -> a -> Path a
 mkPath start goal = Path Set.empty
                          (Map.singleton start 0)
                          (Q.singleton start $ guessLength start goal)
                          Map.empty
                          goal
 
-pathHelper :: forall a b.(Ord b, Metric b, PathGraph a b) => a -> Path b -> Either String [b]
+pathHelper :: forall a b c.(Ord c, Heuristic c, Graph a b c) => a b -> Path c -> Either String [c]
 pathHelper graph (Path closedSet gs fsop path goal) =
     case Q.minView fsop of
         Just (current, newOpen) -> processCurrent (Q.key current) newOpen
         Nothing -> Left "Found no path"
-    where processCurrent :: b -> Q.PSQ b Float -> Either String [b]
+    where processCurrent :: c -> Q.PSQ c Float -> Either String [c]
           processCurrent currentNode open =
               let newClosed = Set.insert currentNode closedSet in
               if currentNode == goal
@@ -47,7 +47,7 @@ pathHelper graph (Path closedSet gs fsop path goal) =
                        pathHelper graph (Path newClosed gs' fsop' path' goal)
 
 
-updatePath :: (Ord b, Metric b)
+updatePath :: (Ord b, Heuristic b)
            => b
            -> b
            -> Set.Set b
@@ -70,11 +70,11 @@ updatePath goal current closed s@(gs, fs, p) (nnode, ncost) =
         Nothing -> error "data structure inconsistent"
 
 -- | Find a shortest path from the start node to the goal node.
-pfind :: (Ord b, Metric b, PathGraph a b)
-      => a                 -- ^ The graph to be traversed
-      -> b                 -- ^ The start node
-      -> b                 -- ^ The goal node
-      -> Either String [b] {- ^ Either a string explaining why a path could
+pfind :: (Ord c, Heuristic c, Graph a b c)
+      => a b               -- ^ The graph to be traversed
+      -> c                 -- ^ The start node
+      -> c                 -- ^ The goal node
+      -> Either String [c] {- ^ Either a string explaining why a path could
                                 not be found, or the found shortest path in
                                 order from start to goal.-}
 pfind graph start goal = pathHelper graph $ mkPath start goal

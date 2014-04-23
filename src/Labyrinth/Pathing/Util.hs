@@ -33,7 +33,6 @@ expand (px, py) (qx, qy) =
         iter s = (take (n+1) $ iterate (+s) 0) in
     ((+px) *** (+py)) <$> zip (iter sx) (iter sy)
 
-
 rewindPath :: Ord a => Map.Map a a -> a -> [a] -> [a]
 rewindPath path end sofar =
     case Map.lookup end path of
@@ -49,3 +48,4 @@ euclid (i, j) (x, y) =  (sqrt (xx + yy))
 
 qMember :: (Ord a, Ord b) => a -> Q.PSQ a b -> Bool
 qMember = isJust .: Q.lookup
+

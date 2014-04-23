@@ -14,6 +14,7 @@ module Labyrinth.Util where
 
 import Debug.Trace
 import Data.Function
+import Control.Arrow(first, second)
 import qualified Data.Set as Set
 import Control.Parallel.Strategies
 
@@ -59,3 +60,8 @@ minMaxView set = do
     (x, rest) <- Set.maxView set
     (y, rest2) <- Set.minView rest
     return (x, y, rest2)
+
+catEithers :: [Either a b] -> ([a], [b])
+catEithers [] = (,) [] []
+catEithers (Right x : xs) = second (x:) $ catEithers xs
+catEithers (Left x  : xs) = first (x:) $ catEithers xs

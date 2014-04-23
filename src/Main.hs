@@ -12,7 +12,3 @@ main = do
     seed <- select (return 1) randomIO useGlobalRng
     putStrLn $ "Seed: " ++ show seed
     doSimple J.pfind seed
-    print $ expand (10,10) (0,20)
-    print $ expand (10,10) (10,10)
-    print $ expand (10,10) (10,20)
-    print $ expand (30,10) (10,10)

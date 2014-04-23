@@ -73,3 +73,7 @@ instance Border Array2d a Point where
 
 instance Heuristic Point where
     guessLength = (/ 1.5) .: euclid
+
+
+
+
