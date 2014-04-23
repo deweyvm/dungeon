@@ -63,13 +63,7 @@ findNeighbors checkOpen graph n@(x, y) parents =
                 let v2 = sel (x + dx, y + dy)
                              (checkOpen (x + dx, y + dy)) in
                 let v3 = sel (x - dx, y + dy) True in
-                          --   ((not . checkOpen) (x - dx, y) &&
-                          --           checkOpen (x, y + dy) &&
-                          --           checkOpen (x - dx, x + dy)) in
                 let v4 = sel (x + dx, y - dy) True in
-                          --   ((not . checkOpen) (x, y - dy) &&
-                          --           checkOpen (x + dx, y) &&
-                          --           checkOpen (x + dx, y - dy)) in
                 catMaybes [v0, v1, v2, v3, v4]
            else if vert
            then let s = checkOpen (x, y + dy) in
@@ -138,7 +132,7 @@ pathHelper graph (Path closedSet gs fsop path goal) =
                        (gs', fsop', path') = foldl (updatePath checkOpen goal currentNode newClosed) (gs, open, path) ns in
                        pathHelper graph (Path newClosed gs' fsop' path' goal)
 
-updatePath :: (Heuristic Point)
+updatePath :: Heuristic Point
            => (Point -> Bool)
            -> Point
            -> Point

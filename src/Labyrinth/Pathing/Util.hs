@@ -31,7 +31,7 @@ expand (px, py) (qx, qy) =
         sy = signum dy
         n = max (abs dx) (abs dy)
         iter s = (take (n+1) $ iterate (+s) 0) in
-   ((+px) *** (+py)) <$> zip (iter sx) (iter sy)
+    ((+px) *** (+py)) <$> zip (iter sx) (iter sy)
 
 
 rewindPath :: Ord a => Map.Map a a -> a -> [a] -> [a]

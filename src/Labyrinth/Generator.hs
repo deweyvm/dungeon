@@ -69,10 +69,12 @@ randColors seed =
    where rand f = (randoms . mkStdGen . f) seed
 
 
-saveMap :: FilePath -> Array2d Color -> IO ()
-saveMap path arr@(Array2d cols rows _) =
-    writePng path $ generateImage (getOrElse colors (PixelRGBA8 0 0 0 255)) cols rows
-    where colors = (\(r, g, b) -> PixelRGBA8 r g b 255) <$> arr
+saveMap :: FilePath -> Int -> Array2d Color -> IO ()
+saveMap path fc arr@(Array2d cols rows _) =
+    let ex = expandMap 3 (0,0,0) arr in
+    let colors = (\(r, g, b) -> PixelRGBA8 r g b 255) <$> ex in
+    let getter = getOrElse colors (PixelRGBA8 0 0 0 255) in
+    writePng path $ generateImage getter (cols*fc) (rows*fc)
 
 data PathRegion a = PathRegion a           -- start node
                                a           -- end node
@@ -125,9 +127,12 @@ largest s = List.maximumBy setSize s
 
 data Params a = Params Int Int Int (a -> a)
 
+expandMap :: Int -> a -> Array2d a -> Array2d a
+expandMap fc x arr@(Array2d cols rows _) = tabulate (cols*fc) (rows*fc) x get
+    where get (i, j) = getOrElse arr x (i `quot` fc) (j `quot` fc)
 
 saveMask :: Params a -> Array2d Bool -> IO ()
-saveMask _ arr = saveMap "mask.png" $ (select white black) <$> arr
+saveMask _ arr = saveMap "mask.png" 3 $ (select white black) <$> arr
 
 saveFlooded :: Params a -> [Set.Set Point] -> IO ()
 saveFlooded (Params _ cols rows _) (x:_) = do
@@ -137,7 +142,7 @@ saveFlooded (Params _ cols rows _) (x:_) = do
 saveFlooded _ _ = return ()
 
 savePathed :: Params a -> Array2d Color -> IO ()
-savePathed _ = saveMap "flood.png"
+savePathed _ = saveMap "flood.png" 3
 
 
 doSimple :: (Array2d Bool -> Point -> Point -> Either String [Point])
@@ -164,7 +169,7 @@ processMaze pfind processMask processFlooded processPathed p@(Params seed rows c
     let array = tabulate rows cols False (\pt -> Set.member pt biggest)
     let border = F.computeBorder array False ((0,0) :: Point)
     let paths = catMaybes [createPath pfind permuted biggest]
-    let pathRegions = mkPathRegion <$> (paths ++ [((0,0),(0,0),border,[])])
+    let pathRegions = mkPathRegion <$> (((0,0),(0,0),border,[]):paths)
     let arr = toPixelArray seed cols rows pathRegions
     processMask p permuted
     processFlooded p [biggest]
