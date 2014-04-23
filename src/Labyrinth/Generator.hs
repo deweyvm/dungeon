@@ -121,7 +121,7 @@ getOpen arr = Set.fromList $ foldli (\xs (pt, x) -> (select id (pt:) (isOpen x))
 
 
 largest :: [Set.Set Point] -> Set.Set Point
-largest s = List.maximumBy setSize s
+largest s = List.maximumBy setSize (Set.empty:s)
     where setSize s0 s1 =  Set.size s0 `compare` Set.size s1
 
 
