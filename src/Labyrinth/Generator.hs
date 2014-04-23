@@ -140,8 +140,7 @@ savePathed :: Params a -> Array2d Color -> IO ()
 savePathed _ = saveMap "flood.png"
 
 
-doSimple :: (Ord Point, Heuristic Point, Graph Array2d Bool Point)
-         => (Array2d Bool -> Point -> Point -> Either String [Point])
+doSimple :: (Array2d Bool -> Point -> Point -> Either String [Point])
          -> Int
          -> IO ()
 doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params seed 200 200 transform)

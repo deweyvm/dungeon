@@ -66,7 +66,6 @@ instance Open a => Maze Array2d a Point where
 instance Border Array2d a Point where
     addBorder arr@(Array2d cols rows _) bk =
         let unshift = (subtract 1) *** (subtract 1) in
-        let shift = (+6) *** (+6) in
         let get pt = case geti arr (unshift pt) of
                          Just x -> x
                          Nothing -> bk in

@@ -49,11 +49,15 @@ class Functor a => Maze a b c | a -> c where
     isPassable :: a b -> c -> Bool
     isPassable g coord = (isNode . snd) $ (,) coord $ getNode g coord
 
+{- | A graph with a notion of a border which can be expanded.
+     a - the underlying collection type
+     b - the element representing nodes in the graph
+     c - the coordinate indexing nodes -}
 class Border a b c | a -> c where
     addBorder :: a b
               -> b
               -> (a b, c -> c)
 
-
+-- | Represents (bijectively) invertible elements.
 class Invertible a where
     invert :: a -> a
