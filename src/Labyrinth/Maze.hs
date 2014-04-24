@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, FlexibleInstances, FunctionalDependencies #-}
 {-|
-Module      : Labyrinth.PathGraph
+Module      : Labyrinth.Maze
 Description : maze typeclass
 Copyright   : (c) deweyvm 2014
 License     : MIT
@@ -19,7 +19,7 @@ module Labyrinth.Maze(
     isNode,
     getCoord
 ) where
-
+import Labyrinth.Graph
 data Node a b = Node a b
               | Solid b
               | OutOfBounds b
@@ -40,7 +40,7 @@ getCoord (OutOfBounds x) = x
     a - the underlying collection type
     b - the element representing nodes in the graph
     c - the coordinate indexing nodes -}
-class Functor a => Maze a b c | a -> c where
+class (Functor a, Graph a b c) => Maze a b c | a -> c where
     -- | Get adjacent nodes to a given vertex
     getAdjacent :: a b -> c -> [(Node b c, Float)]
     getNode :: a b -> c -> Node b c

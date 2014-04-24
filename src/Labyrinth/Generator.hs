@@ -149,7 +149,7 @@ doSimple :: (Array2d Bool -> Point -> Point -> Either String [Point])
          -> Int
          -> IO ()
 doSimple pfind seed = processMaze pfind saveMask saveFlooded savePathed (Params seed 500 500 transform)
-    where transform = (M.<.> [ M.occuCount 7
+    where transform = (M.<.> [ M.occuCount 5
                              , M.vertStrip True 4
                              , M.occuCount 5
                              ])

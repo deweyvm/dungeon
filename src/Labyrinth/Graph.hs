@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, FlexibleInstances, FunctionalDependencies #-}
 {-|
-Module      : Labyrinth.PathGraph
+Module      : Labyrinth.Graph
 Description : graph typeclass
 Copyright   : (c) deweyvm 2014
 License     : MIT

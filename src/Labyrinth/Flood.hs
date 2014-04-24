@@ -117,7 +117,7 @@ computeBorder m blank seed =
 
 
 
-getDiameter :: (Show c, Invertible b, Ord b, Ord c, Heuristic c, Border a b c, Maze a b c, Graph a b c)
+getDiameter :: (Show c, Invertible b, Ord b, Ord c, Heuristic c, Border a b c, Maze a b c)
             => a b
             -> b
             -> c

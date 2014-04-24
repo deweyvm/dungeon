@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, ViewPatterns, MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-|
-Module      : Labyrinth.PathGraph
+Module      : Labyrinth.Instances
 Description : graph instances
 Copyright   : (c) deweyvm 2014
 License     : MIT
@@ -9,8 +9,7 @@ Maintainer  : deweyvm
 Stability   : experimental
 Portability : unknown
 
-A graph and associated typeclasses for doing flood fills, pathfinding, etc
-independent of data structure.
+Graph and maze (and related) instances.
 -}
 module Labyrinth.Instances() where
 
@@ -72,7 +71,7 @@ instance Border Array2d a Point where
         (border, unshift)
 
 instance Heuristic Point where
-    guessLength = (/ 1.5) .: euclid
+    guessLength = (/ 0.1) .: euclid
 
 
 
