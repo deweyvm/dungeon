@@ -13,7 +13,6 @@ independent of data structure.
 -}
 module Labyrinth.Graph(
     Graph(..),
-    Heuristic(..),
     Open(..)
 ) where
 
@@ -27,10 +26,6 @@ class Graph a b c where
                  -> c            -- ^ the coordinate of a node
                  -> [(c, Float)] -- ^ a list of (node coordinate,cost) tuples
 
-
--- | A metric for measuring the distance between two objects.
-class Heuristic a where
-    guessLength :: a -> a -> Float
 
 -- | Glass signifying if an object is "passable" for mazes.
 class Open a where

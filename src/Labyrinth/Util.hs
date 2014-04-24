@@ -18,6 +18,10 @@ import Control.Arrow(first, second)
 import qualified Data.Set as Set
 import Control.Parallel.Strategies
 
+
+-- | Aliar for a heuristic function
+type Heuristic a = a -> a -> Float
+
 -- | Alias for a pair of integers.
 type Point = (Int,Int)
 

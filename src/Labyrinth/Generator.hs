@@ -100,7 +100,7 @@ toPixelArray seed cols rows regions =
               | Set.member pt rest = color
               | elem pt path = white
 
-createPath :: (Ord Point, Heuristic Point, Graph Array2d Bool Point)
+createPath :: (Ord Point, Graph Array2d Bool Point)
            => (Array2d Bool -> Point -> Point -> Either String [Point])
            -> Array2d Bool
            -> Set.Set Point

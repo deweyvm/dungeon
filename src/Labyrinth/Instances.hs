@@ -70,8 +70,6 @@ instance Border Array2d a Point where
         let border = tabulate (cols + 2) (rows + 2) bk get in
         (border, unshift)
 
-instance Heuristic Point where
-    guessLength = (/ 0.1) .: euclid
 
 
 

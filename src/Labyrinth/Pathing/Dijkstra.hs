@@ -14,10 +14,9 @@ module Labyrinth.Pathing.Dijkstra(pfind) where
 
 import qualified Data.PSQueue as Q
 import qualified Data.Map as Map
-import Labyrinth.Util
 import Labyrinth.Pathing.Util
 import Labyrinth.Graph
-import Debug.Trace
+
 data Path a = Path (Map.Map a Float) -- dist
                    (Map.Map a a)     -- prev
                    (Q.PSQ a Float)   -- prio
@@ -36,7 +35,7 @@ mkPath x = Path (Map.singleton x 0)
                 (Map.empty)
                 (Q.singleton x 0)
 
-dijkstraHelper :: forall a b c . (Show c, Ord c, Heuristic c, Graph a b c)
+dijkstraHelper :: (Ord c, Graph a b c)
                => a b
                -> c
                -> c
@@ -61,9 +60,13 @@ dijkstraHelper g start goal (Path dist prev prio) =
                  let newPrio = Q.alter (\_ -> Just alt) v prio' in
                  Path newDist newPrev newPrio
             else p
-pfind :: (Show c, Ord c, Heuristic c, Graph a b c)
-      => a b
-      -> c
-      -> c
-      -> Either String [c]
+
+-- | Find a shortest path from the given start node to the goal node.
+pfind :: (Ord c, Graph a b c)
+      => a b               -- ^ The graph to be traversed
+      -> c                 -- ^ The start node
+      -> c                 -- ^ The goal node
+      -> Either String [c] {- ^ Either a string explaining w
+                                not be found, or the found s
+                                order from start to goal.-}
 pfind g start goal = dijkstraHelper g start goal $ mkPath start

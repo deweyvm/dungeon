@@ -31,10 +31,10 @@ data Path a = Path (Set.Set a)       -- closed set
                    (Map.Map a a)     -- parent map
                    a                 -- goal node
 
-mkPath :: Heuristic Point => Point -> Point -> Path Point
-mkPath start goal = Path Set.empty
+mkPath :: Heuristic Point -> Point -> Point -> Path Point
+mkPath h start goal = Path Set.empty
                          (Map.singleton start 0)
-                         (Q.singleton start $ guessLength start goal)
+                         (Q.singleton start $ h start goal)
                          Map.empty
                          goal
 
@@ -115,11 +115,12 @@ jump checkOpen goal pt@(x, y) (px, py) =
 
 
 
-pathHelper :: (Heuristic Point, Open a, Graph Array2d a Point)
-           => Array2d a
+pathHelper :: (Open a, Graph Array2d a Point)
+           => Heuristic Point
+           -> Array2d a
            -> Path Point
            -> Either String [Point]
-pathHelper graph (Path closedSet gs fsop path goal) =
+pathHelper h graph (Path closedSet gs fsop path goal) =
     case Q.minView fsop of
         Just (current, newOpen) -> processCurrent (Q.key current) newOpen
         Nothing -> Left $ "Found no path to " ++ show goal
@@ -129,11 +130,11 @@ pathHelper graph (Path closedSet gs fsop path goal) =
               if currentNode == goal
               then Right $ expandPath expand $ rewindPath path goal []
               else let ns = findNeighbors checkOpen graph currentNode path
-                       (gs', fsop', path') = foldl (updatePath checkOpen goal currentNode newClosed) (gs, open, path) ns in
-                       pathHelper graph (Path newClosed gs' fsop' path' goal)
+                       (gs', fsop', path') = foldl (updatePath h checkOpen goal currentNode newClosed) (gs, open, path) ns in
+                       pathHelper h graph (Path newClosed gs' fsop' path' goal)
 
 updatePath :: Heuristic Point
-           => (Point -> Bool)
+           -> (Point -> Bool)
            -> Point
            -> Point
            -> Set.Set Point
@@ -141,7 +142,7 @@ updatePath :: Heuristic Point
            -> Point
            -> (Map.Map Point Float, Q.PSQ Point Float, Map.Map Point Point)
 --warning, node cost is ignored, cost must be uniform for this algorithm
-updatePath checkOpen goal current closed s@(gs, fs, p) nnode =
+updatePath h checkOpen goal current closed s@(gs, fs, p) nnode =
     let jMaybe = jump checkOpen goal nnode current in
     case jMaybe of
         Just jumpPoint | Set.notMember jumpPoint closed ->
@@ -150,7 +151,7 @@ updatePath checkOpen goal current closed s@(gs, fs, p) nnode =
             let g' = g + d in
             let inOpen = qMember jumpPoint fs in
             if (not inOpen || g' < g)
-            then let f = (g' + guessLength jumpPoint goal) in
+            then let f = (g' + h jumpPoint goal) in
                  let gs' = Map.insert jumpPoint g' gs in
                  let fs' = Q.insert jumpPoint f fs in
                  let p' = Map.insert jumpPoint current p in
@@ -159,13 +160,15 @@ updatePath checkOpen goal current closed s@(gs, fs, p) nnode =
         _ -> s
 
 
-{- | Find a shortest path from the start node to the goal node assuming
-     uniform edge costs-}
-pfind :: (Open a, Heuristic Point, Graph Array2d a Point)
-      => Array2d a             -- ^ the graph to be traversed
+{- | Find a path from the start node to the goal node assuming uniform
+     edge costs.
+     Given an admissible heuristic, this will also be a shortest path.-}
+pfind :: (Open a, Graph Array2d a Point)
+      => Heuristic Point       -- ^ the pathfinding heuristic
+      -> Array2d a             -- ^ the graph to be traversed
       -> Point                 -- ^ the start node
       -> Point                 -- ^ the goal node
       -> Either String [Point] {- ^ either a string explaining why a path could
                                 not be found, or the found shortest path in
                                 order from start to goal-}
-pfind graph start goal = pathHelper graph $ mkPath start goal
+pfind h graph start goal = pathHelper h graph $ mkPath h start goal
