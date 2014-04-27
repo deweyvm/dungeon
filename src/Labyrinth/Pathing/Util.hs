@@ -39,7 +39,6 @@ rewindPath path end sofar =
         Just next -> rewindPath path next (end:sofar)
         Nothing -> sofar
 
-{-# INLINE euclid #-}
 euclid :: Point -> Point -> Float
 euclid (i, j) (x, y) =  (sqrt (xx + yy))
         where xx = sq (x - i)
