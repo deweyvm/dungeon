@@ -20,7 +20,7 @@ import Labyrinth.Util
 
 
 expandPath :: (a -> a -> [a]) -> [a] -> [a]
-expandPath      _ [] = []
+expandPath _ [] = []
 expandPath f xs = concat $ uncurry f <$> zip xs (tail xs)
 
 expand :: Point -> Point -> [Point]
