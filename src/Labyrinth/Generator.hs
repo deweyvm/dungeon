@@ -32,7 +32,12 @@ printArray f arr =
     let (Array2d _ _ vec) = (\(x, y) p -> select "" "\n" (x == 0 && y /= 0)  ++ (f p)) <$*> arr in
     concat (Vec.toList vec)
 
-printSet :: Bool -> (Bool -> String) -> Int -> Int -> Set.Set Point -> String
+printSet :: Bool
+         -> (Bool -> String)
+         -> Int
+         -> Int
+         -> Set.Set Point
+         -> String
 printSet x f cols rows set =
     let arr = tabulate cols rows x (\pt -> Set.member pt set) in
     printArray f arr
@@ -47,12 +52,10 @@ printCase set rows cols f = do
             printPoint x ++ "\n" ++ printPoint y ++ "\n" ++  printSet False f rows cols set
         Nothing -> ""
 
-
 makeRandom :: Int -> Int -> Int -> Array2d Bool
 makeRandom seed cols rows =
     Array2d cols rows (Vec.fromList rand)
     where rand = take (cols*rows) $ randoms (mkStdGen seed)
-
 
 type Color = (Word8, Word8, Word8)
 
@@ -67,7 +70,6 @@ randColors :: Int -> [Color]
 randColors seed =
    zip3 (rand id) (rand (+1)) (rand (+2))
    where rand f = (randoms . mkStdGen . f) seed
-
 
 saveMap :: FilePath -> Int -> Array2d Color -> IO ()
 saveMap path fc arr@(Array2d cols rows _) =
@@ -100,8 +102,7 @@ toPixelArray seed cols rows regions =
               | Set.member pt rest = color
               | elem pt path = white
 
-createPath :: (Ord Point, Graph Array2d Bool Point)
-           => (Array2d Bool -> Point -> Point -> Either String [Point])
+createPath :: (Array2d Bool -> Point -> Point -> Either String [Point])
            -> Array2d Bool
            -> Set.Set Point
            -> Maybe (Point, Point, Set.Set Point, [Point])
